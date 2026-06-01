@@ -1,0 +1,40 @@
+# Secrets and local config: never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.kubeconfig
+kubeconfig
+kubeconfig.*
+.kube/
+*.token
+.netrc
+
+# Go build output
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+junit.xml
+
+# Scan reports generated locally (curated copies live in docs/evidence/)
+/reports/
+*.sarif
+gl-*-report.json
+sbom*.json
+
+# Tool caches
+.trivycache/
+.cache/
+.gocache/
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
