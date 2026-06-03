@@ -43,3 +43,17 @@ One short entry per decision: context, decision, why. Newest last.
   runners and in containers; CRLF breaks the shebang line.
 - **Decision:** `* text=auto eol=lf` for the whole repo.
 - **Why:** Removes a class of "works locally, fails in CI" errors.
+
+## D-006: Local tooling runs from a pinned toolbox image
+
+- **Context:** The Makefile needs Go, make, kind, Trivy, hadolint, Checkov and
+  others. Installing a dozen tools per machine drifts from the versions the
+  pipeline uses, and the development machine had only Docker and kubectl.
+- **Decision:** `build/toolbox/Dockerfile` copies each tool out of its
+  publisher's image, pinned by digest, at the same version as the pipeline.
+  `scripts/toolbox.sh make <target>` runs any target inside it with the host
+  Docker socket mounted. Running the targets natively still works if the tools
+  are installed.
+- **Why:** The only local prerequisite is Docker, and "works locally" means
+  the same tool versions as CI. The image is never shipped or built by the
+  pipeline.
