@@ -25,6 +25,16 @@ import (
 var version = "dev"
 
 func main() {
+	// "orders-api healthcheck" probes a running instance. The image has no
+	// shell or curl, so the Dockerfile HEALTHCHECK calls the binary itself.
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		if err := healthcheck(os.Getenv); err != nil {
+			fmt.Fprintln(os.Stderr, "orders-api healthcheck:", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
 	defer stop()
 
@@ -32,6 +42,28 @@ func main() {
 		fmt.Fprintln(os.Stderr, "orders-api:", err)
 		os.Exit(1)
 	}
+}
+
+// healthcheck returns nil if the instance on the configured port answers
+// /healthz with 200.
+func healthcheck(getenv func(string) string) error {
+	cfg, err := config.Load(getenv)
+	if err != nil {
+		return err
+	}
+	client := &http.Client{
+		Timeout:   2 * time.Second,
+		Transport: &http.Transport{DisableKeepAlives: true},
+	}
+	resp, err := client.Get("http://127.0.0.1:" + strconv.Itoa(cfg.Port) + "/healthz")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status %d", resp.StatusCode)
+	}
+	return nil
 }
 
 // run starts the server and blocks until ctx is cancelled, then shuts down
