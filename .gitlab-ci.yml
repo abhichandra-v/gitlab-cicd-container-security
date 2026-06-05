@@ -201,3 +201,22 @@ trivy-config:
     expire_in: 30 days
     paths:
       - trivy-config.json
+
+trivy-image:
+  extends: .trivy
+  # IMAGE_REF (repository@digest) arrives through build-image's dotenv report.
+  needs:
+    - build-image
+  variables:
+    TRIVY_USERNAME: $CI_REGISTRY_USER
+    TRIVY_PASSWORD: $CI_REGISTRY_PASSWORD
+  script:
+    - sh scripts/scan-image.sh "$IMAGE_REF" reports
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - reports/trivy-image.json
+      - reports/trivy-image.txt
+    reports:
+      container_scanning: reports/gl-container-scanning-report.json
