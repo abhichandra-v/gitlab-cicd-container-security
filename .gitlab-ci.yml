@@ -18,6 +18,7 @@ stages:
   - lint
   - test
   - build
+  - scan
 
 variables:
   GO_IMAGE: "golang:1.27.2@sha256:007a316059246276cb214df93950be77837545dc78007a73e0291a4963d5d3bf"
@@ -25,6 +26,7 @@ variables:
   HADOLINT_IMAGE: "hadolint/hadolint:v2.15.1-alpine@sha256:a1d49ae1a4e83c1dbad26b8c1ad7588c8bd1e04f4866b34ad3cac50335198552"
   DOCKER_IMAGE: "docker:29.9.0-cli@sha256:1a4c7cb63513f349bdad01fcc6e0f3f2f67d37b9da86f14dc0d4a0942eecda00"
   DIND_IMAGE: "docker:29.9.0-dind@sha256:0b6d18a4a222e71c88be6034926b4f6cde2fc33c2218643d03ccfddc65995470"
+  TRIVY_IMAGE: "aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa"
   GOTESTSUM_VERSION: "v1.13.0"
 
   # Go caches live inside the project directory so GitLab can cache them.
@@ -32,6 +34,9 @@ variables:
   GOCACHE: "$CI_PROJECT_DIR/.cache/go-build"
   GOLANGCI_LINT_CACHE: "$CI_PROJECT_DIR/.cache/golangci-lint"
   GOFLAGS: "-mod=readonly"
+
+  TRIVY_CACHE_DIR: "$CI_PROJECT_DIR/.trivycache"
+  TRIVY_NO_PROGRESS: "true"
 
   IMAGE_SHA: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   IMAGE_BRANCH: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
@@ -153,3 +158,46 @@ build-image:
       - image-size-bytes.txt
     reports:
       dotenv: build.env
+
+# ---------------------------------------------------------------- scan ----
+# Every job in this stage exits non-zero on findings, which fails the
+# pipeline. Suppressions live in .trivyignore.yaml and as inline Checkov
+# skips, each with a justification and a review date (docs/SECURITY.md).
+# Jobs that do not need the image use `needs: []` and start immediately.
+
+.trivy:
+  stage: scan
+  image:
+    name: $TRIVY_IMAGE
+    entrypoint: [""]
+  cache:
+    key: trivy-db
+    paths:
+      - .trivycache/
+
+trivy-fs:
+  extends: .trivy
+  needs: []
+  script:
+    - trivy --version
+    # Scan once to JSON (kept as an artifact), then print the table from
+    # that JSON. The convert step is the gate: it exits 1 on any finding.
+    - trivy fs --scanners vuln,secret,misconfig --format json --output trivy-fs.json .
+    - trivy convert --format table --exit-code 1 trivy-fs.json
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - trivy-fs.json
+
+trivy-config:
+  extends: .trivy
+  needs: []
+  script:
+    - trivy config --format json --output trivy-config.json .
+    - trivy convert --format table --exit-code 1 trivy-config.json
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - trivy-config.json
