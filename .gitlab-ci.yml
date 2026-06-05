@@ -90,3 +90,29 @@ hadolint:
   needs: []
   script:
     - hadolint Dockerfile build/naive/Dockerfile build/distroless/Dockerfile build/toolbox/Dockerfile
+
+# ---------------------------------------------------------------- test ----
+
+go-test:
+  stage: test
+  # Full Debian-based Go image: the race detector needs cgo and a C compiler.
+  image: $GO_IMAGE
+  extends: .go-cache
+  needs: []
+  script:
+    - go install "gotest.tools/gotestsum@${GOTESTSUM_VERSION}"
+    - go vet ./...
+    - >
+      "$GOPATH/bin/gotestsum" --format testname --junitfile junit.xml --
+      -race -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+    - go tool cover -func=coverage.out
+    - go tool cover -html=coverage.out -o coverage.html
+  coverage: '/^total:\s+\(statements\)\s+(\d+\.\d+)%/'
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - coverage.out
+      - coverage.html
+    reports:
+      junit: junit.xml
