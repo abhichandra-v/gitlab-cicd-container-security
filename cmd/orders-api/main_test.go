@@ -106,7 +106,8 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 			t.Errorf("logs missing %q:\n%s", want, logs.String())
 		}
 	}
-	if _, err := client.Get(base + "/healthz"); err == nil {
+	if resp, err := client.Get(base + "/healthz"); err == nil {
+		_ = resp.Body.Close()
 		t.Error("server still accepting connections after shutdown")
 	}
 	if err := healthcheck(testEnv(map[string]string{"PORT": port})); err == nil {
@@ -139,11 +140,11 @@ func TestHealthcheckFailures(t *testing.T) {
 
 func TestRunFailsFast(t *testing.T) {
 	// Hold a port so the "address in use" case is real.
-	ln, err := net.Listen("tcp", ":0")
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 	_, busyPort, _ := net.SplitHostPort(ln.Addr().String())
 
 	tests := []struct {
