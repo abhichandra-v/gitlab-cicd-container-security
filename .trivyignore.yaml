@@ -1,0 +1,19 @@
+---
+# Trivy suppressions. Every entry needs a statement (why it is acceptable) and
+# an expired_at date. After that date Trivy reports the finding again, which
+# forces a review. Policy: docs/SECURITY.md, "Suppressions".
+misconfigurations:
+  - id: DS-0002
+    paths:
+      - build/toolbox/Dockerfile
+    statement: >-
+      Local development toolbox, never shipped or deployed. It runs as root
+      because it talks to the host Docker socket, which is root-owned.
+    expired_at: 2027-04-13
+  - id: DS-0026
+    paths:
+      - build/toolbox/Dockerfile
+    statement: >-
+      Local development toolbox running one-shot commands; it has no
+      long-running process to health-check.
+    expired_at: 2027-04-13

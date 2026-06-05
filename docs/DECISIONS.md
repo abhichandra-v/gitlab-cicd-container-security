@@ -111,3 +111,32 @@ One short entry per decision: context, decision, why. Newest last.
   stage stays on `golang:1.27.2-alpine3.24`. Same Go version in both.
 - **Why:** Race detection is worth more than a smaller CI image, and the
   production binary is built without cgo either way.
+
+## D-012: Trivy suppressions use `.trivyignore.yaml`, not `.trivyignore`
+
+- **Context:** The brief asks for a justification and a review date on every
+  suppression. Plain `.trivyignore` is a list of IDs with free-text comments.
+- **Decision:** `.trivyignore.yaml`, referenced from `trivy.yaml`.
+- **Why:** The YAML form has `statement`, `paths` and `expired_at` fields, so
+  a suppression is scoped to one file and stops working on its review date
+  instead of living forever.
+
+## D-013: Scan jobs scan to JSON once, then gate on `trivy convert`
+
+- **Context:** The jobs need a readable table in the log, a JSON artifact and
+  (for images) a GitLab report. Running the scan three times could give three
+  different answers if the vulnerability database updates in between.
+- **Decision:** One scan writes JSON; `trivy convert --exit-code 1` prints the
+  table from it and is the step that fails the job.
+- **Why:** All outputs describe the same scan. Verified locally that
+  `convert` exits 1 for vulnerabilities, misconfigurations and secrets.
+
+## D-014: The gate proof was run locally
+
+- **Context:** The brief asks for the failing `trivy-image` job log from a
+  GitLab pipeline on `demo/vulnerable-base`. No GitLab project existed yet.
+- **Decision:** `docs/evidence/gate-blocks-vulnerable-image.txt` is a local
+  run of `scripts/scan-image.sh`, the script the job calls, and says so in
+  its header. The branch exists locally, unmerged, ready to push.
+- **Why:** It proves the gate logic. It does not prove the GitLab job wiring
+  (registry login, `IMAGE_REF` hand-off); that needs the real pipeline.

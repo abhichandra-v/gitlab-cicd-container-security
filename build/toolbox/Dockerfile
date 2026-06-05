@@ -3,6 +3,11 @@
 # Usage: scripts/toolbox.sh make <target>
 #
 # Each tool is copied out of its publisher's own image, pinned by digest.
+#
+# Scanner suppressions for this file (review by 2027-04-13). The same two
+# findings are suppressed for Trivy in .trivyignore.yaml.
+#checkov:skip=CKV_DOCKER_3:Dev toolbox, never deployed; root is needed to use the host Docker socket. Review 2027-04-13.
+#checkov:skip=CKV_DOCKER_2:Dev toolbox runs one-shot commands; nothing long-running to health-check. Review 2027-04-13.
 
 FROM aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa AS trivy
 FROM hadolint/hadolint:v2.15.1-alpine@sha256:a1d49ae1a4e83c1dbad26b8c1ad7588c8bd1e04f4866b34ad3cac50335198552 AS hadolint
