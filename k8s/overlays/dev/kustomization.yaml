@@ -1,0 +1,31 @@
+---
+# Dev: one replica, the locally built image. Used by `make deploy` against
+# kind and by the pipeline's deploy-test job.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: orders-dev
+
+resources:
+  - ../../base
+
+replicas:
+  - name: orders-api
+    count: 1
+
+images:
+  - name: orders-api
+    newName: orders-api
+    newTag: local
+
+patches:
+  - target:
+      kind: Deployment
+      name: orders-api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+      - op: replace
+        path: /spec/template/spec/containers/0/env/1/value
+        value: debug
