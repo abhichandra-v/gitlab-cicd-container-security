@@ -38,3 +38,6 @@ sbom*.json
 *.swp
 .DS_Store
 Thumbs.db
+
+# CI caches (GOPATH and build caches live inside the project dir in CI)
+.go/
