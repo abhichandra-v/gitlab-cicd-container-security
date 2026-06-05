@@ -55,7 +55,12 @@ func healthcheck(getenv func(string) string) error {
 		Timeout:   2 * time.Second,
 		Transport: &http.Transport{DisableKeepAlives: true},
 	}
-	resp, err := client.Get("http://127.0.0.1:" + strconv.Itoa(cfg.Port) + "/healthz")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet,
+		"http://127.0.0.1:"+strconv.Itoa(cfg.Port)+"/healthz", nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -86,7 +91,8 @@ func run(ctx context.Context, getenv func(string) string, out io.Writer, addrCh 
 		IdleTimeout:       60 * time.Second,
 	}
 
-	ln, err := net.Listen("tcp", ":"+strconv.Itoa(cfg.Port))
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", ":"+strconv.Itoa(cfg.Port))
 	if err != nil {
 		return err
 	}
