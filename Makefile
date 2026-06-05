@@ -25,6 +25,12 @@ fmt-check: ## Fail if any Go file is not gofmt-formatted
 	@unformatted="$$(gofmt -l .)"; \
 	if [ -n "$$unformatted" ]; then echo "not gofmt-formatted:"; echo "$$unformatted"; exit 1; fi
 
+.PHONY: lint
+lint: ## golangci-lint, hadolint and yamllint (same configs as the pipeline)
+	golangci-lint run --timeout 5m ./...
+	hadolint Dockerfile build/naive/Dockerfile build/distroless/Dockerfile build/toolbox/Dockerfile
+	yamllint -s .
+
 .PHONY: test
 test: fmt-check ## go vet, then unit tests with the race detector and coverage
 	go vet ./...
