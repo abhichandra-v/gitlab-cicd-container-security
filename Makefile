@@ -57,9 +57,22 @@ size-report: ## Build hardened, distroless and naive images; write docs/evidence
 image-evidence: image ## Record image history, config and contents; run it locked down
 	bash scripts/image-evidence.sh $(IMAGE)
 
+.PHONY: scan
+scan: image ## Run every scan gate the pipeline runs; any finding fails
+	trivy fs --scanners vuln,secret,misconfig --exit-code 1 --no-progress .
+	trivy config --exit-code 1 .
+	sh scripts/scan-image.sh $(IMAGE) reports
+	checkov --config-file .checkov.yaml
+	gitleaks git --redact --no-banner --exit-code 1 .
+
+.PHONY: sbom
+sbom: image ## Write a CycloneDX SBOM of the image to reports/sbom.cdx.json
+	mkdir -p reports
+	trivy image --no-progress --format cyclonedx --output reports/sbom.cdx.json $(IMAGE)
+
 .PHONY: clean
 clean: ## Remove build output
 	rm -rf bin coverage.out junit.xml reports
 
 # Targets added in later phases (see docs/PLAN.md):
-# scan, validate, kind-up, deploy, smoke
+# validate, kind-up, deploy, smoke
