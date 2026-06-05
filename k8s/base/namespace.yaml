@@ -5,3 +5,8 @@ metadata:
   name: orders
   labels:
     app.kubernetes.io/part-of: orders
+    # The API server rejects any pod in this namespace that does not meet the
+    # "restricted" Pod Security Standard, whatever its manifest says.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
