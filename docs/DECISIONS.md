@@ -140,3 +140,36 @@ One short entry per decision: context, decision, why. Newest last.
   its header. The branch exists locally, unmerged, ready to push.
 - **Why:** It proves the gate logic. It does not prove the GitLab job wiring
   (registry login, `IMAGE_REF` hand-off); that needs the real pipeline.
+
+## D-015: Validators run on rendered overlays, built once
+
+- **Context:** Kustomize bases are templates; what reaches the cluster is the
+  rendered overlay. Each validator rendering for itself could use a different
+  kustomize version.
+- **Decision:** A `render-manifests` job (the pinned kustomize image) writes
+  `rendered/dev.yaml` and `rendered/prod.yaml` as artifacts. kubeconform,
+  kube-score, trivy-config and checkov all `need` it. `make validate` does the
+  same locally.
+- **Why:** Every tool judges the bytes that would be applied, and they all
+  judge the same bytes.
+
+## D-016: Images are loaded into kind from a single-platform archive
+
+- **Context:** `kind load docker-image` failed for a pulled multi-platform
+  image on the Docker containerd image store (`ctr: content digest ... not
+  found`). The pipeline deploy test pulls its image the same way.
+- **Decision:** `scripts/kind-load.sh` runs `docker save --platform <daemon
+  platform>` and `kind load image-archive`, falling back to the plain command
+  on Docker versions without `save --platform`.
+- **Why:** Works on both image stores. Found by hitting the failure locally.
+
+## D-017: Dev overlay relaxes two checks; prod relaxes none
+
+- **Context:** kind runs a locally loaded image, so `imagePullPolicy: Always`
+  cannot work there, and one replica is enough for a throwaway cluster.
+  kube-score and Checkov flag both.
+- **Decision:** The dev overlay patches the pull policy and adds scoped ignore
+  annotations (`kube-score/ignore`, `checkov.io/skip2`). The base and the prod
+  overlay stay strict, and prod is scored with `--exit-one-on-warning`.
+- **Why:** The exceptions are visible in the overlay that needs them and
+  cannot leak into prod.
