@@ -17,3 +17,11 @@ misconfigurations:
       Local development toolbox running one-shot commands; it has no
       long-running process to health-check.
     expired_at: 2027-04-13
+  - id: KSV-0125
+    paths:
+      - rendered/prod.yaml
+    statement: >-
+      registry.gitlab.com/abhichandra-v/orders-api-pipeline is this project's
+      own registry, the one the pipeline pushes to. Trivy's built-in list of
+      trusted registries does not include GitLab.
+    expired_at: 2027-04-13

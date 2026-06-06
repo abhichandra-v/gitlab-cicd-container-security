@@ -1,0 +1,19 @@
+---
+# Prod: three replicas, the image from the GitLab registry at a release tag.
+# deploy-staging overrides the tag with the digest built by the pipeline.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: orders-prod
+
+resources:
+  - ../../base
+
+replicas:
+  - name: orders-api
+    count: 3
+
+images:
+  - name: orders-api
+    newName: registry.gitlab.com/abhichandra-v/orders-api-pipeline
+    newTag: v1.0.0

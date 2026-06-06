@@ -29,7 +29,12 @@ variables:
   TRIVY_IMAGE: "aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa"
   CHECKOV_IMAGE: "bridgecrew/checkov:3.3.28@sha256:19ab1e9a08bf76f78391ca6fa46bb62fd08737e4e66466b16a82aa2d1337e153"
   GITLEAKS_IMAGE: "zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
+  KUBE_SCORE_IMAGE: "zegl/kube-score:v1.20.0@sha256:ac4c43ad560af905d66f6bf57b0937c591332e6dbf2167c31193a13b4695ab97"
+  KUBECONFORM_IMAGE: "ghcr.io/yannh/kubeconform:v0.8.0-alpine@sha256:6b90a5f23d846140ce0194fe050b1995e546eba938f3a6bf10c039dd5e24588f"
+  KUSTOMIZE_IMAGE: "registry.k8s.io/kustomize/kustomize:v5.8.3@sha256:429eda4a1c76a7de458d0c4ca3ded9b5d764899ff6bdaeccc1d98b1b6ee873e4"
   GOTESTSUM_VERSION: "v1.13.0"
+  # Kubernetes version the manifests are validated against (kind node image).
+  KUBERNETES_VERSION: "1.37.0"
 
   # Go caches live inside the project directory so GitLab can cache them.
   GOPATH: "$CI_PROJECT_DIR/.go"
@@ -194,7 +199,9 @@ trivy-fs:
 
 trivy-config:
   extends: .trivy
-  needs: []
+  # Scans the Dockerfiles, the raw manifests and the rendered overlays.
+  needs:
+    - render-manifests
   script:
     - trivy config --format json --output trivy-config.json .
     - trivy convert --format table --exit-code 1 trivy-config.json
@@ -228,7 +235,9 @@ checkov:
   image:
     name: $CHECKOV_IMAGE
     entrypoint: [""]
-  needs: []
+  # With rendered/ present, Checkov also scores what kustomize produces.
+  needs:
+    - render-manifests
   script:
     - checkov --version
     - >
@@ -275,3 +284,46 @@ sbom:
       - sbom.cdx.json
     reports:
       cyclonedx: sbom.cdx.json
+
+# Renders both overlays once. kube-score, kubeconform, trivy-config and
+# checkov all validate these files, so they all judge the same output.
+render-manifests:
+  stage: scan
+  image:
+    name: $KUSTOMIZE_IMAGE
+    entrypoint: [""]
+  needs: []
+  script:
+    - /app/kustomize version
+    - mkdir -p rendered
+    - /app/kustomize build k8s/overlays/dev > rendered/dev.yaml
+    - /app/kustomize build k8s/overlays/prod > rendered/prod.yaml
+    - wc -l rendered/*.yaml
+  artifacts:
+    expire_in: 30 days
+    paths:
+      - rendered/
+
+kubeconform:
+  stage: scan
+  image:
+    name: $KUBECONFORM_IMAGE
+    entrypoint: [""]
+  needs:
+    - render-manifests
+  script:
+    # -strict rejects unknown and duplicate fields, so a typo in a manifest
+    # fails here instead of being silently dropped by the API server.
+    - /kubeconform -strict -summary -kubernetes-version "$KUBERNETES_VERSION" rendered/dev.yaml rendered/prod.yaml
+
+kube-score:
+  stage: scan
+  image:
+    name: $KUBE_SCORE_IMAGE
+    entrypoint: [""]
+  needs:
+    - render-manifests
+  script:
+    - kube-score version
+    - kube-score score --kubernetes-version "v${KUBERNETES_VERSION%.*}" --exit-one-on-warning rendered/dev.yaml
+    - kube-score score --kubernetes-version "v${KUBERNETES_VERSION%.*}" --exit-one-on-warning rendered/prod.yaml

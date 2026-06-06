@@ -1,0 +1,34 @@
+# Manifest validation: make validate
+# generated 2026-10-13T10:20:16Z in the toolbox image
+# kubeconform v0.8.0, kube-score v1.20.0-docker-linux/amd64, checkov 3.3.28, kustomize v5.8.3
+
+$ make validate
+mkdir -p rendered
+kustomize build k8s/overlays/dev > rendered/dev.yaml
+kustomize build k8s/overlays/prod > rendered/prod.yaml
+kubeconform -strict -summary -kubernetes-version 1.37.0 rendered/dev.yaml rendered/prod.yaml
+Summary: 14 resources found in 2 files - Valid: 14, Invalid: 0, Errors: 0, Skipped: 0
+kube-score score --kubernetes-version v1.37 --exit-one-on-warning rendered/dev.yaml
+apps/v1/Deployment orders-api in orders-dev                                   ✅
+networking.k8s.io/v1/NetworkPolicy default-deny-all in orders-dev             ✅
+networking.k8s.io/v1/NetworkPolicy orders-api-allow-http in orders-dev        ✅
+policy/v1/PodDisruptionBudget orders-api in orders-dev                        ✅
+v1/Service orders-api in orders-dev                                           ✅
+kube-score score --kubernetes-version v1.37 --exit-one-on-warning rendered/prod.yaml
+apps/v1/Deployment orders-api in orders-prod                                  ✅
+networking.k8s.io/v1/NetworkPolicy default-deny-all in orders-prod            ✅
+networking.k8s.io/v1/NetworkPolicy orders-api-allow-http in orders-prod       ✅
+policy/v1/PodDisruptionBudget orders-api in orders-prod                       ✅
+v1/Service orders-api in orders-prod                                          ✅
+checkov --framework kubernetes --compact --quiet -f rendered/dev.yaml -f rendered/prod.yaml
+kubernetes scan results:
+
+Passed checks: 272, Failed checks: 0, Skipped checks: 4
+
+exit code: 0
+
+# Checkov skips (from its JUnit report). Each has a justification and a review date.
+CKV_K8S_43  k8s/base/deployment.yaml  The image digest is set by the pipeline at deploy time (deploy-staging applies IMAGE_REF); the manifest carries a tag. Review 2027-04-13.
+CKV_K8S_43  rendered/dev.yaml         (same annotation, inherited from the base)
+CKV_K8S_43  rendered/prod.yaml        (same annotation, inherited from the base)
+CKV_K8S_15  rendered/dev.yaml         Dev overlay only. The image is loaded into kind with kind load; there is no registry to pull from. Review 2027-04-13.
