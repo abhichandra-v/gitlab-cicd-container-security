@@ -19,6 +19,7 @@ stages:
   - test
   - build
   - scan
+  - deploy-test
 
 variables:
   GO_IMAGE: "golang:1.27.2@sha256:007a316059246276cb214df93950be77837545dc78007a73e0291a4963d5d3bf"
@@ -33,6 +34,11 @@ variables:
   KUBECONFORM_IMAGE: "ghcr.io/yannh/kubeconform:v0.8.0-alpine@sha256:6b90a5f23d846140ce0194fe050b1995e546eba938f3a6bf10c039dd5e24588f"
   KUSTOMIZE_IMAGE: "registry.k8s.io/kustomize/kustomize:v5.8.3@sha256:429eda4a1c76a7de458d0c4ca3ded9b5d764899ff6bdaeccc1d98b1b6ee873e4"
   GOTESTSUM_VERSION: "v1.13.0"
+  # Release binaries fetched by scripts/fetch-verified.sh (SHA-256 checked).
+  KIND_VERSION: "v0.33.0"
+  KIND_SHA256: "aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d"
+  KUBECTL_VERSION: "v1.37.1"
+  KUBECTL_SHA256: "65691ff77eb6fa44c908b77a1082c9f092c3b9733b5cefabec0d1104890e21a8"
   # Kubernetes version the manifests are validated against (kind node image).
   KUBERNETES_VERSION: "1.37.0"
 
@@ -327,3 +333,61 @@ kube-score:
     - kube-score version
     - kube-score score --kubernetes-version "v${KUBERNETES_VERSION%.*}" --exit-one-on-warning rendered/dev.yaml
     - kube-score score --kubernetes-version "v${KUBERNETES_VERSION%.*}" --exit-one-on-warning rendered/prod.yaml
+
+# --------------------------------------------------------- deploy-test ----
+
+# Deploys the image that was just built to a throwaway Kubernetes cluster
+# (kind, running inside the docker:dind service) and smoke-tests it. Runs only
+# after every scan gate has passed. The cluster is always deleted.
+deploy-test:
+  stage: deploy-test
+  extends: .dind
+  needs:
+    - job: build-image
+      artifacts: true
+    - job: trivy-fs
+      artifacts: false
+    - job: trivy-config
+      artifacts: false
+    - job: trivy-image
+      artifacts: false
+    - job: checkov
+      artifacts: false
+    - job: gitleaks
+      artifacts: false
+    - job: kubeconform
+      artifacts: false
+    - job: kube-score
+      artifacts: false
+  variables:
+    # The kind node runs in the dind service, so the API server is reached at
+    # the service alias, not localhost (see scripts/kind-up.sh).
+    KIND_API_HOST: docker
+  script:
+    - apk add --no-cache bash curl
+    - >
+      sh scripts/fetch-verified.sh
+      "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+      "$KIND_SHA256" /usr/local/bin/kind
+    - >
+      sh scripts/fetch-verified.sh
+      "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+      "$KUBECTL_SHA256" /usr/local/bin/kubectl
+    - chmod +x /usr/local/bin/kind /usr/local/bin/kubectl
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker pull "$IMAGE_REF"
+    - bash scripts/kind-up.sh
+    - bash scripts/deploy.sh "$IMAGE_REF"
+    - bash scripts/smoke-k8s.sh orders-dev
+    - bash scripts/netpol-check.sh orders-dev
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" != "success" ]; then
+        bash scripts/k8s-diagnostics.sh orders-dev diagnostics || true
+      fi
+    - kind delete cluster --name orders-api || true
+  artifacts:
+    when: on_failure
+    expire_in: 14 days
+    paths:
+      - diagnostics/
