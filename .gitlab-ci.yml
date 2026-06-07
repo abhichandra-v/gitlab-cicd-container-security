@@ -19,6 +19,9 @@ stages:
   - test
   - build
   - scan
+  - deploy-test
+  - deploy
+  - release
 
 variables:
   GO_IMAGE: "golang:1.27.2@sha256:007a316059246276cb214df93950be77837545dc78007a73e0291a4963d5d3bf"
@@ -32,7 +35,14 @@ variables:
   KUBE_SCORE_IMAGE: "zegl/kube-score:v1.20.0@sha256:ac4c43ad560af905d66f6bf57b0937c591332e6dbf2167c31193a13b4695ab97"
   KUBECONFORM_IMAGE: "ghcr.io/yannh/kubeconform:v0.8.0-alpine@sha256:6b90a5f23d846140ce0194fe050b1995e546eba938f3a6bf10c039dd5e24588f"
   KUSTOMIZE_IMAGE: "registry.k8s.io/kustomize/kustomize:v5.8.3@sha256:429eda4a1c76a7de458d0c4ca3ded9b5d764899ff6bdaeccc1d98b1b6ee873e4"
+  ALPINE_IMAGE: "alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6"
+  GLAB_IMAGE: "registry.gitlab.com/gitlab-org/cli:v1.118.0@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2"
   GOTESTSUM_VERSION: "v1.13.0"
+  # Release binaries fetched by scripts/fetch-verified.sh (SHA-256 checked).
+  KIND_VERSION: "v0.33.0"
+  KIND_SHA256: "aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d"
+  KUBECTL_VERSION: "v1.37.1"
+  KUBECTL_SHA256: "65691ff77eb6fa44c908b77a1082c9f092c3b9733b5cefabec0d1104890e21a8"
   # Kubernetes version the manifests are validated against (kind node image).
   KUBERNETES_VERSION: "1.37.0"
 
@@ -327,3 +337,147 @@ kube-score:
     - kube-score version
     - kube-score score --kubernetes-version "v${KUBERNETES_VERSION%.*}" --exit-one-on-warning rendered/dev.yaml
     - kube-score score --kubernetes-version "v${KUBERNETES_VERSION%.*}" --exit-one-on-warning rendered/prod.yaml
+
+# --------------------------------------------------------- deploy-test ----
+
+# Deploys the image that was just built to a throwaway Kubernetes cluster
+# (kind, running inside the docker:dind service) and smoke-tests it. Runs only
+# after every scan gate has passed. The cluster is always deleted.
+deploy-test:
+  stage: deploy-test
+  extends: .dind
+  needs:
+    - job: build-image
+      artifacts: true
+    - job: trivy-fs
+      artifacts: false
+    - job: trivy-config
+      artifacts: false
+    - job: trivy-image
+      artifacts: false
+    - job: checkov
+      artifacts: false
+    - job: gitleaks
+      artifacts: false
+    - job: kubeconform
+      artifacts: false
+    - job: kube-score
+      artifacts: false
+  variables:
+    # The kind node runs in the dind service, so the API server is reached at
+    # the service alias, not localhost (see scripts/kind-up.sh).
+    KIND_API_HOST: docker
+  script:
+    - apk add --no-cache bash curl
+    - >
+      sh scripts/fetch-verified.sh
+      "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64"
+      "$KIND_SHA256" /usr/local/bin/kind
+    - >
+      sh scripts/fetch-verified.sh
+      "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+      "$KUBECTL_SHA256" /usr/local/bin/kubectl
+    - chmod +x /usr/local/bin/kind /usr/local/bin/kubectl
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker pull "$IMAGE_REF"
+    - bash scripts/kind-up.sh
+    - bash scripts/deploy.sh "$IMAGE_REF"
+    - bash scripts/smoke-k8s.sh orders-dev
+    - bash scripts/netpol-check.sh orders-dev
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" != "success" ]; then
+        bash scripts/k8s-diagnostics.sh orders-dev diagnostics || true
+      fi
+    - kind delete cluster --name orders-api || true
+  artifacts:
+    when: on_failure
+    expire_in: 14 days
+    paths:
+      - diagnostics/
+
+# -------------------------------------------------------------- deploy ----
+
+# Manual deploy of the tested digest to a real cluster. Needs the masked,
+# protected KUBECONFIG_B64 variable; without it the script prints a notice and
+# exits 0, so a project with no staging cluster still has a green pipeline.
+# Rollback: kubectl -n orders-staging rollout undo deployment/orders-api
+# (the script does this itself if the rollout fails). See docs/RUNBOOK.md.
+deploy-staging:
+  stage: deploy
+  image: $ALPINE_IMAGE
+  needs:
+    - job: build-image
+      artifacts: true
+    - job: deploy-test
+      artifacts: false
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: true
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+      when: manual
+      allow_failure: true
+  environment:
+    name: staging
+    deployment_tier: staging
+  # One staging deploy at a time, and never cancelled halfway.
+  resource_group: staging
+  interruptible: false
+  script:
+    - apk add --no-cache bash curl
+    - >
+      sh scripts/fetch-verified.sh
+      "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+      "$KUBECTL_SHA256" /usr/local/bin/kubectl
+    - chmod +x /usr/local/bin/kubectl
+    - bash scripts/deploy-staging.sh
+
+# ------------------------------------------------------------- release ----
+# Tag pipelines only (vMAJOR.MINOR.PATCH). The image is not rebuilt: the
+# digest that passed the gates in this pipeline gets the version tag.
+
+release-image:
+  stage: release
+  extends: .dind
+  needs:
+    - job: build-image
+      artifacts: true
+    - job: deploy-test
+      artifacts: false
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  interruptible: false
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    # Registry-side retag: no pull, no rebuild, the digest cannot change.
+    - docker buildx imagetools create --tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" "$IMAGE_REF"
+    - docker buildx imagetools inspect "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+    - echo "RELEASE_IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > release.env
+    - echo "RELEASE_IMAGE_REF=$IMAGE_REF" >> release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+
+release:
+  stage: release
+  image: $GLAB_IMAGE
+  needs:
+    - job: release-image
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    # Full history, so the notes can list commits since the previous tag.
+    GIT_DEPTH: "0"
+  script:
+    - sh scripts/release-notes.sh "$CI_COMMIT_TAG" "$CI_REGISTRY_IMAGE" "$RELEASE_IMAGE_REF" > release-notes.md
+    - cat release-notes.md
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "orders-api $CI_COMMIT_TAG"
+    description: release-notes.md
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - release-notes.md

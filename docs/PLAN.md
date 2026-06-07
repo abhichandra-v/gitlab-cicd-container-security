@@ -72,12 +72,16 @@ GitLab account.
 
 ## Phase 6: `ci/deploy-automation`
 
-- [ ] `deploy-test`: ephemeral kind cluster in the job, dev overlay, rollout wait, `scripts/smoke.sh`, diagnostics on failure, always tears down
-- [ ] `deploy-staging`: manual, `environment:`, `KUBECONFIG_B64`, skips cleanly when absent
-- [ ] `release`: on `v*` tags, retag image, GitLab release
-- [ ] Deploy and rollback flow documented
+- [x] `deploy-test`: ephemeral kind cluster in the job, dev overlay, rollout wait, `scripts/smoke.sh`, diagnostics on failure, always tears down
+- [x] `deploy-staging`: manual, `environment:`, `KUBECONFIG_B64`, skips cleanly when absent
+- [x] `release`: on `v*` tags, retag image, GitLab release
+- [x] Deploy and rollback flow documented
 
 🛑 **Checkpoint B:** owner runs the full pipeline (including a tag), sends results, adds screenshots under `docs/evidence/screenshots/`.
+
+- [ ] Full pipeline run on GitLab, including a tag (not yet run: needs the owner account)
+- [ ] Screenshots added under `docs/evidence/screenshots/`
+- [ ] `deploy-staging` success path exercised against a real cluster
 
 ## Phase 7: `docs/final-polish` → tag `v1.0.0`
 

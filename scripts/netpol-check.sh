@@ -8,7 +8,7 @@
 set -euo pipefail
 
 NS="${1:-orders-dev}"
-PROBE_IMAGE="${PROBE_IMAGE:-alpine:3.24.2}"
+PROBE_IMAGE="${PROBE_IMAGE:-alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6}"
 svc_ip="$(kubectl -n "$NS" get service orders-api -o jsonpath='{.spec.clusterIP}')"
 
 docker image inspect "$PROBE_IMAGE" >/dev/null 2>&1 || docker pull -q "$PROBE_IMAGE"

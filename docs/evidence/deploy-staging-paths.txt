@@ -1,0 +1,56 @@
+# scripts/deploy-staging.sh: every path except a successful deploy
+# run locally on 2026-10-13. There is no staging cluster yet, so the success path
+# against a real cluster has NOT been exercised. The failed-rollout path was
+# run against the local kind cluster, with its kubeconfig passed the same way
+# the pipeline passes KUBECONFIG_B64.
+#
+# Note: the last run predates a small fix. On a first deploy there is no
+# previous revision, so `rollout undo` reports "no rollout history"; the
+# script now says so and stops instead of waiting a second timeout.
+
+$ bash scripts/deploy-staging.sh        # KUBECONFIG_B64 unset
+KUBECONFIG_B64 is not set (or this ref is not protected).
+Nothing was deployed. To enable this job, see docs/SETUP-GITLAB.md, step 5.
+exit code: 0
+
+$ IMAGE_REF=orders-api:latest KUBECONFIG_B64=... bash scripts/deploy-staging.sh        # a tag, not a digest
+IMAGE_REF must be a digest reference, got: orders-api:latest
+exit code: 1
+
+$ DRY_RUN=1 IMAGE_REF=registry.gitlab.com/abhichandra-v/orders-api-pipeline@sha256:0000000000000000000000000000000000000000000000000000000000000000 bash scripts/deploy-staging.sh | grep -E "^kind:|namespace:|image:|replicas:" | sort | uniq -c
+      1         image: registry.gitlab.com/abhichandra-v/orders-api-pipeline@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      6   namespace: orders-staging
+      1   replicas: 3
+      1 kind: Deployment
+      1 kind: Namespace
+      2 kind: NetworkPolicy
+      1 kind: PodDisruptionBudget
+      1 kind: Service
+      1 kind: ServiceAccount
+exit code: 0
+
+$ KUBECONFIG_B64=$(base64 -w0 < ~/.kube/config) IMAGE_REF=<digest that does not exist> ROLLOUT_TIMEOUT=40s bash scripts/deploy-staging.sh
+  # against the local kind cluster: the image cannot be pulled, so the rollout must fail and the script must roll back
+--- deploying registry.gitlab.com/abhichandra-v/orders-api-pipeline@sha256:0000000000000000000000000000000000000000000000000000000000000000 to namespace orders-staging
+namespace/orders-staging created
+serviceaccount/orders-api created
+service/orders-api created
+deployment.apps/orders-api created
+poddisruptionbudget.policy/orders-api created
+networkpolicy.networking.k8s.io/default-deny-all created
+networkpolicy.networking.k8s.io/orders-api-allow-http created
+--- waiting for the rollout (timeout 40s)
+Waiting for deployment "orders-api" rollout to finish: 0 of 3 updated replicas are available...
+error: timed out waiting for the condition
+--- ROLLOUT FAILED: collecting state, then rolling back
+NAME                          READY   STATUS         RESTARTS   AGE   IP           NODE                       NOMINATED NODE   READINESS GATES
+orders-api-6c6fcc6865-25kpz   0/1     ErrImagePull   0          41s   10.244.0.6   orders-api-control-plane   <none>           <none>
+orders-api-6c6fcc6865-4s7h2   0/1     ErrImagePull   0          41s   10.244.0.7   orders-api-control-plane   <none>           <none>
+orders-api-6c6fcc6865-59mjv   0/1     ErrImagePull   0          41s   10.244.0.5   orders-api-control-plane   <none>           <none>
+[kubectl describe deployment/orders-api output trimmed]
+Error from server (BadRequest): container "orders-api" in pod "orders-api-6c6fcc6865-25kpz" is waiting to start: image can't be pulled
+Warning: resource deployments/orders-api was previously managed with 'kubectl apply'. Rolling back will not update the kubectl.kubernetes.io/last-applied-configuration annotation, which may cause unexpected behavior on future 'kubectl apply' operations. Consider using 'kubectl apply' with your previous configuration file instead.
+error: no rollout history found for deployment "orders-api"
+Waiting for deployment "orders-api" rollout to finish: 0 of 3 updated replicas are available...
+error: timed out waiting for the condition
+exit code: 1
