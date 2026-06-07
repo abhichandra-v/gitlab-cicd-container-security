@@ -1,0 +1,74 @@
+# Rolling back a bad deploy with kubectl rollout undo
+# run locally against the kind cluster (dev overlay) on 2026-10-13
+# kubectl v1.37.1, server v1.37.0
+
+# 1. A healthy deployment (revision 1).
+
+$ kubectl -n orders-dev rollout status deployment/orders-api --timeout 120s
+deployment "orders-api" successfully rolled out
+
+$ kubectl -n orders-dev get pods -o wide
+NAME                          READY   STATUS    RESTARTS   AGE   IP           NODE                       NOMINATED NODE   READINESS GATES
+orders-api-5dcf9ffb6b-fcgt6   1/1     Running   0          6s    10.244.0.8   orders-api-control-plane   <none>           <none>
+
+# 2. A bad release: an image tag that does not exist.
+
+$ kubectl -n orders-dev set image deployment/orders-api orders-api=orders-api:does-not-exist
+deployment.apps/orders-api image updated
+
+$ kubectl -n orders-dev rollout status deployment/orders-api --timeout 25s
+Waiting for deployment "orders-api" rollout to finish: 1 old replicas are pending termination...
+error: timed out waiting for the condition
+exit code: 1
+
+$ kubectl -n orders-dev get pods -o wide
+NAME                          READY   STATUS             RESTARTS   AGE   IP           NODE                       NOMINATED NODE   READINESS GATES
+orders-api-5dcf9ffb6b-fcgt6   1/1     Running            0          32s   10.244.0.8   orders-api-control-plane   <none>           <none>
+orders-api-f9b4cf458-ntt9p    0/1     ImagePullBackOff   0          26s   10.244.0.9   orders-api-control-plane   <none>           <none>
+
+# 3. The old pod is still serving: maxUnavailable is 0, so the broken
+#    rollout never took capacity away.
+
+$ bash scripts/smoke-k8s.sh orders-dev
+smoke test against http://127.0.0.1:18080
+ok    GET /healthz                       200
+ok    GET /readyz                        200
+ok    POST /orders                       201
+ok    GET /orders/{id}                   200
+ok    GET /orders                        200
+ok    GET /orders/{unknown} is 404       404
+ok    POST /orders invalid is 422        422
+smoke test passed (order b7b6e56f8a3c09ce)
+
+# 4. Roll back.
+
+$ kubectl -n orders-dev rollout undo deployment/orders-api
+Warning: resource deployments/orders-api was previously managed with 'kubectl apply'. Rolling back will not update the kubectl.kubernetes.io/last-applied-configuration annotation, which may cause unexpected behavior on future 'kubectl apply' operations. Consider using 'kubectl apply' with your previous configuration file instead.
+deployment.apps/orders-api rolled back
+
+$ kubectl -n orders-dev rollout status deployment/orders-api --timeout 120s
+Waiting for deployment "orders-api" rollout to finish: 1 old replicas are pending termination...
+deployment "orders-api" successfully rolled out
+
+$ kubectl -n orders-dev get pods -o wide
+NAME                          READY   STATUS        RESTARTS   AGE   IP           NODE                       NOMINATED NODE   READINESS GATES
+orders-api-5dcf9ffb6b-fcgt6   1/1     Running       0          35s   10.244.0.8   orders-api-control-plane   <none>           <none>
+orders-api-f9b4cf458-ntt9p    0/1     Terminating   0          29s   10.244.0.9   orders-api-control-plane   <none>           <none>
+
+$ kubectl -n orders-dev rollout history deployment/orders-api
+deployment.apps/orders-api 
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
+
+
+$ bash scripts/smoke-k8s.sh orders-dev
+smoke test against http://127.0.0.1:18080
+ok    GET /healthz                       200
+ok    GET /readyz                        200
+ok    POST /orders                       201
+ok    GET /orders/{id}                   200
+ok    GET /orders                        200
+ok    GET /orders/{unknown} is 404       404
+ok    POST /orders invalid is 422        422
+smoke test passed (order f4b31eaf19290474)
