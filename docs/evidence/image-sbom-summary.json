@@ -1,0 +1,42 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:3ab24fca-7bda-4f62-8f0b-6b401b4c14c7",
+  "metadata": {
+    "timestamp": "2026-10-13T10:50:17+00:00",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "manufacturer": {
+            "name": "Aqua Security Software Ltd."
+          },
+          "group": "aquasecurity",
+          "name": "trivy",
+          "version": "0.75.0"
+        }
+      ]
+    },
+    "component": "orders-api:local"
+  },
+  "components": [
+    {
+      "type": "application",
+      "name": "orders-api",
+      "version": null,
+      "purl": null
+    },
+    {
+      "type": "library",
+      "name": "github.com/abhichandra-v/orders-api-pipeline",
+      "version": null,
+      "purl": "pkg:golang/github.com/abhichandra-v/orders-api-pipeline"
+    },
+    {
+      "type": "library",
+      "name": "stdlib",
+      "version": "v1.27.2",
+      "purl": "pkg:golang/stdlib@v1.27.2"
+    }
+  ]
+}
