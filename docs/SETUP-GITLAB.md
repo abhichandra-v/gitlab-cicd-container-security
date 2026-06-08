@@ -57,11 +57,29 @@ git push -u origin main --tags
 git push gitlab main --tags
 ```
 
-Pushing the tags starts one tag pipeline per tag (`v0.1.0`, `v0.5.0`,
-`v1.0.0`) in addition to the `main` branch pipeline. That is expected; each
-one also runs the `release` jobs.
+Pushing the tags starts tag pipelines in addition to the `main` branch
+pipeline. What each one does depends on the `.gitlab-ci.yml` at that tag:
+
+| Tag | Pipeline |
+|---|---|
+| `v0.1.0` | None. The commit predates `.gitlab-ci.yml`. |
+| `v0.5.0` | Lint, test, build and scan. No deploy-test or release jobs existed yet, so no release is created. |
+| `v1.0.0` | The full pipeline, including `release-image` and `release`. |
+
+If you would rather start with a single pipeline, push `main` first, wait for
+it to go green, then push the tags.
 
 ## 4. Confirm the pipeline
+
+First let GitLab validate the configuration. This was not possible while the
+pipeline was written (it needs the project to exist), so it is the first real
+check:
+
+```bash
+glab ci lint --repo abhichandra-v/orders-api-pipeline
+```
+
+Then watch the run:
 
 ```bash
 glab ci status --repo abhichandra-v/orders-api-pipeline

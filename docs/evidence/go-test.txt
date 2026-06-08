@@ -1,0 +1,115 @@
+# Unit tests: gotestsum, race detector, coverage (the go-test job command)
+# 2026-10-13T10:53:31Z, commit 5e912a6, go version go1.27.2 linux/amd64
+
+$ gotestsum --format testname -- -race -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+PASS internal/config.TestLoad/defaults (0.00s)
+PASS internal/config.TestLoad/all_set (0.00s)
+PASS internal/config.TestLoad/port_zero_picks_a_free_port (0.00s)
+PASS internal/config.TestLoad/log_level_is_case-insensitive (0.00s)
+PASS internal/config.TestLoad/port_not_a_number (0.00s)
+PASS internal/config.TestLoad/port_negative (0.00s)
+PASS internal/config.TestLoad/port_too_large (0.00s)
+PASS internal/config.TestLoad/bad_log_level (0.00s)
+PASS internal/config.TestLoad/bad_shutdown_timeout (0.00s)
+PASS internal/config.TestLoad/zero_shutdown_timeout (0.00s)
+PASS internal/config.TestLoad/bad_max_orders (0.00s)
+PASS internal/config.TestLoad/zero_max_orders (0.00s)
+PASS internal/config.TestLoad (0.01s)
+coverage: 100.0% of statements
+PASS internal/store.TestCreateAndGet (0.00s)
+PASS internal/store.TestGet/existing (0.00s)
+PASS internal/store.TestGet/unknown (0.00s)
+PASS internal/store.TestGet/empty (0.00s)
+PASS internal/store.TestGet (0.00s)
+PASS internal/store.TestCreateRespectsCapacity/below_capacity (0.00s)
+PASS internal/store.TestCreateRespectsCapacity/at_capacity (0.00s)
+PASS internal/store.TestCreateRespectsCapacity/over_capacity (0.00s)
+PASS internal/store.TestCreateRespectsCapacity/zero_capacity (0.00s)
+PASS internal/store.TestCreateRespectsCapacity (0.00s)
+PASS internal/store.TestCreateReturnsIDError (0.00s)
+PASS internal/store.TestListIsOrderedOldestFirst (0.00s)
+PASS internal/store.TestListEmptyIsNotNil (0.00s)
+PASS cmd/orders-api.TestRunServesAndShutsDownGracefully (0.06s)
+PASS cmd/orders-api.TestHealthcheckFailures/invalid_config (0.00s)
+PASS cmd/orders-api.TestHealthcheckFailures/non-200_response (0.01s)
+PASS cmd/orders-api.TestHealthcheckFailures (0.01s)
+PASS cmd/orders-api.TestRunFailsFast/invalid_config (0.00s)
+PASS cmd/orders-api.TestRunFailsFast/port_in_use (0.01s)
+PASS cmd/orders-api.TestRunFailsFast (0.01s)
+coverage: 74.1% of statements
+PASS internal/handlers.TestCreateOrder/valid (0.00s)
+PASS internal/handlers.TestCreateOrder/valid_with_surrounding_space (0.00s)
+PASS internal/handlers.TestCreateOrder/max_quantity (0.00s)
+PASS internal/handlers.TestCreateOrder/empty_body (0.00s)
+PASS internal/handlers.TestCreateOrder/malformed_json (0.00s)
+PASS internal/handlers.TestCreateOrder/wrong_type (0.00s)
+PASS internal/handlers.TestCreateOrder/unknown_field (0.01s)
+PASS internal/handlers.TestCreateOrder/missing_customer (0.00s)
+PASS internal/handlers.TestCreateOrder/blank_customer (0.00s)
+PASS internal/handlers.TestCreateOrder/long_customer (0.00s)
+PASS internal/handlers.TestCreateOrder/missing_item (0.00s)
+PASS internal/handlers.TestCreateOrder/long_item (0.00s)
+PASS internal/handlers.TestCreateOrder/zero_quantity (0.00s)
+PASS internal/handlers.TestCreateOrder/negative_quantity (0.00s)
+PASS internal/handlers.TestCreateOrder/quantity_too_large (0.00s)
+PASS internal/handlers.TestCreateOrder/body_too_large (0.25s)
+PASS internal/handlers.TestCreateOrder (0.30s)
+PASS internal/handlers.TestGetOrder/existing (0.00s)
+PASS internal/handlers.TestGetOrder/unknown (0.00s)
+PASS internal/handlers.TestGetOrder (0.00s)
+PASS internal/handlers.TestListOrders/empty (0.00s)
+PASS internal/handlers.TestListOrders/one (0.00s)
+PASS internal/handlers.TestListOrders/several (0.00s)
+PASS internal/handlers.TestListOrders (0.00s)
+PASS internal/handlers.TestRouting/delete_orders_not_allowed (0.00s)
+PASS internal/handlers.TestRouting/put_order_not_allowed (0.00s)
+PASS internal/handlers.TestRouting/post_healthz_not_allowed (0.00s)
+PASS internal/handlers.TestRouting/unknown_path (0.00s)
+PASS internal/handlers.TestRouting/root (0.00s)
+PASS internal/handlers.TestRouting (0.00s)
+PASS internal/handlers.TestHealthAndReadiness/healthz_when_ready (0.00s)
+PASS internal/handlers.TestHealthAndReadiness/healthz_when_not_ready (0.00s)
+PASS internal/handlers.TestHealthAndReadiness/readyz_when_ready (0.00s)
+PASS internal/handlers.TestHealthAndReadiness/readyz_when_not_ready (0.00s)
+PASS internal/handlers.TestHealthAndReadiness (0.00s)
+PASS internal/handlers.TestStoreErrors/create_when_full (0.00s)
+PASS internal/handlers.TestStoreErrors/create_internal_error (0.00s)
+PASS internal/handlers.TestStoreErrors/get_internal_error (0.00s)
+PASS internal/handlers.TestStoreErrors (0.00s)
+PASS internal/handlers.TestRequestLogging/api_request_at_info (0.00s)
+PASS internal/handlers.TestRequestLogging/not_found_at_info (0.00s)
+PASS internal/handlers.TestRequestLogging/healthz_at_debug (0.00s)
+PASS internal/handlers.TestRequestLogging/readyz_at_debug (0.00s)
+PASS internal/handlers.TestRequestLogging (0.02s)
+coverage: 100.0% of statements
+PASS internal/config (coverage: 100.0% of statements)
+PASS cmd/orders-api (coverage: 74.1% of statements)
+PASS internal/handlers (coverage: 100.0% of statements)
+PASS internal/store.TestConcurrentUse (1.55s)
+coverage: 96.9% of statements
+PASS internal/store (coverage: 96.9% of statements)
+
+DONE 78 tests in 2.649s
+
+$ go tool cover -func=coverage.out
+github.com/abhichandra-v/orders-api-pipeline/cmd/orders-api/main.go:27:		main		0.0%
+github.com/abhichandra-v/orders-api-pipeline/cmd/orders-api/main.go:49:		healthcheck	93.3%
+github.com/abhichandra-v/orders-api-pipeline/cmd/orders-api/main.go:77:		run		89.7%
+github.com/abhichandra-v/orders-api-pipeline/internal/config/config.go:21:	Load		100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/health.go:10:	healthz		100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/health.go:16:	readyz		100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/orders.go:33:	validate	100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/orders.go:54:	createOrder	100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/orders.go:89:	listOrders	100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/orders.go:93:	getOrder	100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/orders.go:107:	writeJSON	100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/orders.go:113:	writeError	100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/router.go:11:	New		100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/router.go:29:	WriteHeader	100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/handlers/router.go:36:	logRequests	100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/store/store.go:39:	New		100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/store/store.go:48:	randomID	75.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/store/store.go:57:	Create		100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/store/store.go:75:	Get		100.0%
+github.com/abhichandra-v/orders-api-pipeline/internal/store/store.go:87:	List		100.0%
+total:										(statements)	91.4%

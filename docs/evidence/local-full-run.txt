@@ -1,0 +1,151 @@
+# Full local run: make doctor lint test image scan validate
+# 2026-10-13T10:40:15Z, commit 5e912a6, in the toolbox image (build/toolbox/Dockerfile)
+# Docker build progress lines and Trivy INFO lines are removed; nothing else is edited.
+
+================================================================================
+$ make doctor
+================================================================================
+ok       go         go version go1.27.2 linux/amd64
+ok       docker     Docker version 29.9.0, build f415da8
+ok       kind       kind v0.33.0 go1.27.2 linux/amd64
+ok       kubectl    Client Version: v1.37.1
+ok       kustomize  v5.8.3
+ok       trivy      Version: 0.75.0
+ok       hadolint   Haskell Dockerfile Linter 2.15.1
+ok       dockerd    engine reachable
+All required tools found.
+exit code: 0
+
+================================================================================
+$ make lint
+================================================================================
+golangci-lint run --timeout 5m ./...
+0 issues.
+hadolint Dockerfile build/naive/Dockerfile build/distroless/Dockerfile build/toolbox/Dockerfile
+yamllint -s .
+exit code: 0
+
+================================================================================
+$ make test
+================================================================================
+go vet ./...
+go test -race -count=1 -coverprofile=coverage.out ./...
+ok  	github.com/abhichandra-v/orders-api-pipeline/cmd/orders-api	1.249s	coverage: 74.1% of statements
+ok  	github.com/abhichandra-v/orders-api-pipeline/internal/config	1.097s	coverage: 100.0% of statements
+ok  	github.com/abhichandra-v/orders-api-pipeline/internal/handlers	1.375s	coverage: 100.0% of statements
+ok  	github.com/abhichandra-v/orders-api-pipeline/internal/store	2.748s	coverage: 96.9% of statements
+total:										(statements)	91.4%
+exit code: 0
+
+================================================================================
+$ make image
+================================================================================
+docker build --provenance=false --build-arg VERSION=v0.5.0-6-g5e912a6 -t orders-api:local .
+exit code: 0
+
+================================================================================
+$ make scan
+================================================================================
+docker build --provenance=false --build-arg VERSION=v0.5.0-6-g5e912a6 -t orders-api:local .
+mkdir -p rendered
+kustomize build k8s/overlays/dev > rendered/dev.yaml
+kustomize build k8s/overlays/prod > rendered/prod.yaml
+trivy fs --scanners vuln,secret,misconfig --exit-code 1 --no-progress .
+Report Summary
+┌───────────────────────────────────┬────────────┬─────────────────┬─────────┬───────────────────┐
+│              Target               │    Type    │ Vulnerabilities │ Secrets │ Misconfigurations │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ go.mod                            │   gomod    │        0        │    -    │         -         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ Dockerfile                        │ dockerfile │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ build/distroless/Dockerfile       │ dockerfile │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ build/toolbox/Dockerfile          │ dockerfile │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ k8s/base/deployment.yaml          │ kubernetes │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ k8s/base/namespace.yaml           │ kubernetes │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ k8s/base/networkpolicy.yaml       │ kubernetes │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ k8s/base/poddisruptionbudget.yaml │ kubernetes │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ k8s/base/service.yaml             │ kubernetes │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ k8s/base/serviceaccount.yaml      │ kubernetes │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ rendered/dev.yaml                 │ kubernetes │        -        │    -    │         0         │
+├───────────────────────────────────┼────────────┼─────────────────┼─────────┼───────────────────┤
+│ rendered/prod.yaml                │ kubernetes │        -        │    -    │         0         │
+└───────────────────────────────────┴────────────┴─────────────────┴─────────┴───────────────────┘
+- '0': Clean (no security findings detected)
+trivy config --exit-code 1 .
+Report Summary
+┌───────────────────────────────────┬────────────┬───────────────────┐
+│              Target               │    Type    │ Misconfigurations │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ Dockerfile                        │ dockerfile │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ build/distroless/Dockerfile       │ dockerfile │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ build/toolbox/Dockerfile          │ dockerfile │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ k8s/base/deployment.yaml          │ kubernetes │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ k8s/base/namespace.yaml           │ kubernetes │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ k8s/base/networkpolicy.yaml       │ kubernetes │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ k8s/base/poddisruptionbudget.yaml │ kubernetes │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ k8s/base/service.yaml             │ kubernetes │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ k8s/base/serviceaccount.yaml      │ kubernetes │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ rendered/dev.yaml                 │ kubernetes │         0         │
+├───────────────────────────────────┼────────────┼───────────────────┤
+│ rendered/prod.yaml                │ kubernetes │         0         │
+└───────────────────────────────────┴────────────┴───────────────────┘
+- '0': Clean (no security findings detected)
+sh scripts/scan-image.sh orders-api:local reports
+scanning orders-api:local
+2026-10-13T10:42:15Z	WARN	[report] No enabled scanners found. Summary table will not be displayed.
+GATE PASSED: no fixable HIGH or CRITICAL vulnerabilities in orders-api:local.
+checkov --config-file .checkov.yaml
+dockerfile scan results:
+Passed checks: 184, Failed checks: 0, Skipped checks: 2
+kubernetes scan results:
+Passed checks: 272, Failed checks: 0, Skipped checks: 4
+gitlab_ci scan results:
+Passed checks: 63, Failed checks: 0, Skipped checks: 0
+gitleaks git --redact --no-banner --exit-code 1 .
+10:42AM INF 38 commits scanned.
+10:42AM INF scanned ~228296 bytes (228.30 KB) in 8.01s
+10:42AM INF no leaks found
+exit code: 0
+
+================================================================================
+$ make validate
+================================================================================
+mkdir -p rendered
+kustomize build k8s/overlays/dev > rendered/dev.yaml
+kustomize build k8s/overlays/prod > rendered/prod.yaml
+kubeconform -strict -summary -kubernetes-version 1.37.0 rendered/dev.yaml rendered/prod.yaml
+Summary: 14 resources found in 2 files - Valid: 14, Invalid: 0, Errors: 0, Skipped: 0
+kube-score score --kubernetes-version v1.37 --exit-one-on-warning rendered/dev.yaml
+apps/v1/Deployment orders-api in orders-dev                                   ✅
+networking.k8s.io/v1/NetworkPolicy default-deny-all in orders-dev             ✅
+networking.k8s.io/v1/NetworkPolicy orders-api-allow-http in orders-dev        ✅
+policy/v1/PodDisruptionBudget orders-api in orders-dev                        ✅
+v1/Service orders-api in orders-dev                                           ✅
+kube-score score --kubernetes-version v1.37 --exit-one-on-warning rendered/prod.yaml
+apps/v1/Deployment orders-api in orders-prod                                  ✅
+networking.k8s.io/v1/NetworkPolicy default-deny-all in orders-prod            ✅
+networking.k8s.io/v1/NetworkPolicy orders-api-allow-http in orders-prod       ✅
+policy/v1/PodDisruptionBudget orders-api in orders-prod                       ✅
+v1/Service orders-api in orders-prod                                          ✅
+checkov --framework kubernetes --compact --quiet -f rendered/dev.yaml -f rendered/prod.yaml
+kubernetes scan results:
+Passed checks: 272, Failed checks: 0, Skipped checks: 4
+exit code: 0
