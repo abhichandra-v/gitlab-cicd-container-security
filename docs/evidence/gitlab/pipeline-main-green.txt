@@ -1,0 +1,363 @@
+# Pipeline 558 on main: all stages green
+# Real GitLab CI output, fetched through the GitLab API on 2026-10-13.
+# Self-hosted GitLab 18.9 EE, gitlab-runner 18.8, Docker executor, NOT privileged.
+# The instance hostname is replaced with <gitlab-host>; upload tokens and
+# correlation ids are redacted. Nothing else is edited.
+
+pipeline 558: success (waited 0s)
+  3541 lint         go-lint            success       9s
+  3542 lint         hadolint           success       5s
+  3543 test         go-test            success      18s
+  3544 build        build-image        success      21s
+  3545 scan         trivy-fs           success      12s
+  3546 scan         trivy-config       success      11s
+  3547 scan         trivy-image        success      16s
+  3548 scan         checkov            success      13s
+  3549 scan         gitleaks           success       6s
+  3550 scan         sbom               success       7s
+  3551 scan         render-manifests   success       5s
+  3552 scan         kubeconform        success       7s
+  3553 scan         kube-score         success       6s
+  3554 deploy-test  smoke-test         success       6s
+  3555 deploy       deploy-staging     success       7s
+
+================================================================================
+job 3544
+================================================================================
+Running with gitlab-runner 18.8.0 (9ffb4aa0)
+  on docker1-vm U7dwBNCWq, system ID: s_e2e55318b32c
+Preparing the "docker" executor
+Using Docker executor with image ghcr.io/osscontainertools/kaniko:v1.28.6-debug@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0 ...
+Using effective pull policy of [always] for container ghcr.io/osscontainertools/kaniko:v1.28.6-debug@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0
+Pulling docker image ghcr.io/osscontainertools/kaniko:v1.28.6-debug@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0 ...
+Using docker image sha256:282b50332d2a838c9f8c4808bb312c70241ef1d823e1b07800b34f2c97154017 for ghcr.io/osscontainertools/kaniko:v1.28.6-debug@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0 with digest ghcr.io/osscontainertools/kaniko@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0 ...
+Preparing environment
+Using effective pull policy of [always] for container sha256:34b0f89f2c14d52a1417a420619c6802f6809c75a6c39e41103117e478465f8d
+Running on runner-u7dwbncwq-project-26-concurrent-3 via docker1-vm...
+Getting source from Git repository
+Gitaly correlation ID: 01M4TG3GEV7GY9Z92ZMNWMWQ44
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /builds/ai-lab/orders-api-pipeline/.git/
+Created fresh repository.
+Checking out 7ed1ab7d as detached HEAD (ref is main)...
+Removing rendered/
+Skipping Git submodules setup
+Downloading artifacts
+Downloading artifacts for go-test (3543)...
+Downloading artifacts from coordinator... ok        correlation_id=[redacted] host=<gitlab-host> id=3543 responseStatus=200 OK token=[redacted]
+Executing "step_script" stage of the job script
+Using effective pull policy of [always] for container ghcr.io/osscontainertools/kaniko:v1.28.6-debug@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0
+Using docker image sha256:282b50332d2a838c9f8c4808bb312c70241ef1d823e1b07800b34f2c97154017 for ghcr.io/osscontainertools/kaniko:v1.28.6-debug@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0 with digest ghcr.io/osscontainertools/kaniko@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0 ...
+$ mkdir -p /kaniko/.docker
+$ printf '{"auths":{"%s":{"username":"%s","password":"%s"}}}' "$CI_REGISTRY" "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" > /kaniko/.docker/config.json
+$ /kaniko/executor --context "$CI_PROJECT_DIR" --dockerfile "$CI_PROJECT_DIR/Dockerfile" --build-arg "VERSION=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}" --label "org.opencontainers.image.source=$CI_PROJECT_URL" --label "org.opencontainers.image.revision=$CI_COMMIT_SHA" --label "org.opencontainers.image.created=$CI_PIPELINE_CREATED_AT" --destination "$IMAGE_SHA" --destination "$IMAGE_BRANCH" --digest-file "$CI_PROJECT_DIR/digest.txt"
+INFO[0000] active feature flags: FF_KANIKO_BUILDKIT_ARG_ENV_PRECEDENCE, FF_KANIKO_CLEAN_KANIKO_DIR, FF_KANIKO_CONFINE_COPY_SOURCE, FF_KANIKO_DEPRECATE_INTER_STAGE_RESTORE, FF_KANIKO_NO_PROPAGATE_ANNOTATIONS, FF_KANIKO_OCI_WARMER, FF_KANIKO_PRESERVE_HARDLINKS, FF_KANIKO_RELATIVE_LINK_TARGETS, FF_KANIKO_PRESERVE_MOUNTED_PATHS, FF_KANIKO_RUN_MOUNT_BIND, FF_KANIKO_SCOPED_REGISTRY_CERTIFICATES, FF_KANIKO_SECUREJOIN_EXTRACTION, FF_KANIKO_VOLUME_SKIP_MKDIR, FF_KANIKO_WARMER_CACHE_LOCK
+INFO[0000] credential providers by priority: [file:/kaniko/.docker/config.json, env, google, ecr, acr, gitlab]
+INFO[0000] Resolved base name of build to golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d
+INFO[0000] Retrieving image manifest golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d
+INFO[0000] Retrieving image golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d from registry index.docker.io
+INFO[0000] credential providers by priority: [file:/kaniko/.docker/config.json, env, google, ecr, acr, gitlab]
+INFO[0001] Using dockerignore file: /builds/ai-lab/orders-api-pipeline/.dockerignore
+INFO[0001] Retrieving image manifest golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d
+INFO[0001] Returning cached image manifest
+INFO[0001] No base image, nothing to extract
+INFO[0001] Built cross stage deps: map[0:[/out/orders-api]]
+INFO[0001] Retrieving image manifest golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d
+INFO[0001] Returning cached image manifest
+INFO[0001] Building stage 'golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d' [idx: '0', base-idx: '-1']
+INFO[0001] Unpacking rootfs as cmd WORKDIR /src requires it.
+INFO[0005] WORKDIR /src
+INFO[0005] Cmd: workdir
+INFO[0005] Changed working directory to /src
+INFO[0005] Creating directory /src with uid 0 and gid 0
+INFO[0005] Taking snapshot of files...
+INFO[0005] COPY go.mod ./
+INFO[0005] Taking snapshot of files...
+INFO[0005] Initializing snapshotter ...
+INFO[0005] Taking snapshot of full filesystem...
+INFO[0006] RUN go mod download
+INFO[0006] Cmd: /bin/sh
+INFO[0006] Args: [-c go mod download]
+INFO[0006] Running: [/bin/sh -c go mod download]
+go: no module dependencies to download
+INFO[0006] Taking snapshot of full filesystem...
+INFO[0007] COPY cmd ./cmd
+INFO[0007] Taking snapshot of files...
+INFO[0007] COPY internal ./internal
+INFO[0007] Taking snapshot of files...
+INFO[0007] ARG VERSION=dev
+INFO[0007] RUN CGO_ENABLED=0 GOOS=linux go build       -trimpath       -ldflags "-s -w -X main.version=${VERSION}"       -o /out/orders-api ./cmd/orders-api
+INFO[0007] Cmd: /bin/sh
+INFO[0007] Args: [-c CGO_ENABLED=0 GOOS=linux go build       -trimpath       -ldflags "-s -w -X main.version=${VERSION}"       -o /out/orders-api ./cmd/orders-api]
+INFO[0007] Running: [/bin/sh -c CGO_ENABLED=0 GOOS=linux go build       -trimpath       -ldflags "-s -w -X main.version=${VERSION}"       -o /out/orders-api ./cmd/orders-api]
+INFO[0013] Taking snapshot of full filesystem...
+INFO[0014] Saving file out/orders-api for later use
+INFO[0014] Deleting filesystem...
+INFO[0014] No base image, nothing to extract
+INFO[0014] Building stage 'scratch' [idx: '1', base-idx: '-1']
+INFO[0014] Cmd: USER
+INFO[0014] Cmd: EXPOSE
+INFO[0014] Adding exposed port: 8080/tcp
+INFO[0014] Unpacking rootfs as cmd COPY --from=build /out/orders-api /orders-api requires it.
+INFO[0014] COPY --from=build /out/orders-api /orders-api
+INFO[0014] Taking snapshot of files...
+INFO[0014] USER 65532:65532
+INFO[0014] Cmd: USER
+INFO[0014] EXPOSE 8080
+INFO[0014] Cmd: EXPOSE
+INFO[0014] Adding exposed port: 8080/tcp
+INFO[0014] HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3   CMD ["/orders-api", "healthcheck"]
+INFO[0014] ENTRYPOINT ["/orders-api"]
+INFO[0014] credential providers by priority: [file:/kaniko/.docker/config.json, env, google, ecr, acr, gitlab]
+INFO[0014] Pushing image to <gitlab-host>:5050/ai-lab/orders-api-pipeline:7ed1ab7d
+INFO[0015] Pushed <gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:c185ee8cd556b21f82d035d1b64c292672932526bdde6c6264dda7eccce4a644
+INFO[0015] credential providers by priority: [file:/kaniko/.docker/config.json, env, google, ecr, acr, gitlab]
+INFO[0015] Pushing image to <gitlab-host>:5050/ai-lab/orders-api-pipeline:main
+INFO[0015] Pushed <gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:c185ee8cd556b21f82d035d1b64c292672932526bdde6c6264dda7eccce4a644
+$ IMAGE_REF="$CI_REGISTRY_IMAGE@$(cat "$CI_PROJECT_DIR/digest.txt")"
+$ echo "IMAGE_REF=$IMAGE_REF" | tee build.env
+IMAGE_REF=<gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:c185ee8cd556b21f82d035d1b64c292672932526bdde6c6264dda7eccce4a644
+$ echo "$IMAGE_REF" > image-digest.txt
+Uploading artifacts for successful job
+Uploading artifacts...
+image-digest.txt: found 1 matching artifact files and directories
+Uploading artifacts as "archive" to coordinator... 201 Created  correlation_id=[redacted] id=3544 responseStatus=201 Created token=[redacted]
+Uploading artifacts...
+build.env: found 1 matching artifact files and directories
+Uploading artifacts as "dotenv" to coordinator... 201 Created  correlation_id=[redacted] id=3544 responseStatus=201 Created token=[redacted]
+Cleaning up project directory and file based variables
+Job succeeded
+
+================================================================================
+job 3547
+================================================================================
+Running with gitlab-runner 18.8.0 (9ffb4aa0)
+  on docker1-vm U7dwBNCWq, system ID: s_e2e55318b32c
+Preparing the "docker" executor
+Using Docker executor with image aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Using effective pull policy of [always] for container aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+Pulling docker image aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Using docker image sha256:6d93f1ec925b37c5ce785e416b86cba056e10c8c2914a59a8ea7be18115d6764 for aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa with digest aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Preparing environment
+Using effective pull policy of [always] for container sha256:34b0f89f2c14d52a1417a420619c6802f6809c75a6c39e41103117e478465f8d
+Running on runner-u7dwbncwq-project-26-concurrent-0 via docker1-vm...
+Getting source from Git repository
+Gitaly correlation ID: 01M4TG44Z9K9VDW1DMEZWVX5N0
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /builds/ai-lab/orders-api-pipeline/.git/
+Created fresh repository.
+Checking out 7ed1ab7d as detached HEAD (ref is main)...
+Removing .trivycache/
+Removing rendered/
+Removing trivy-config.json
+Skipping Git submodules setup
+Restoring cache
+Checking cache for trivy-db-protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted.
+Successfully extracted cache
+Downloading artifacts
+Downloading artifacts for build-image (3544)...
+Downloading artifacts from coordinator... ok        correlation_id=[redacted] host=<gitlab-host> id=3544 responseStatus=200 OK token=[redacted]
+Executing "step_script" stage of the job script
+Using effective pull policy of [always] for container aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+Using docker image sha256:6d93f1ec925b37c5ce785e416b86cba056e10c8c2914a59a8ea7be18115d6764 for aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa with digest aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+$ sh scripts/scan-image.sh "$IMAGE_REF" reports
+scanning <gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:c185ee8cd556b21f82d035d1b64c292672932526bdde6c6264dda7eccce4a644
+2026-10-13T11:24:58Z	INFO	Loaded	file_path="trivy.yaml"
+2026-10-13T11:24:58Z	INFO	[vuln] Vulnerability scanning is enabled
+2026-10-13T11:24:58Z	INFO	[secret] Secret scanning is enabled
+2026-10-13T11:24:58Z	INFO	[secret] If your scanning is slow, please try '--scanners vuln' to disable secret scanning
+2026-10-13T11:24:58Z	INFO	[secret] Please see https://trivy.dev/docs/v0.75/guide/scanner/secret#recommendation for faster secret detection
+2026-10-13T11:24:58Z	INFO	Number of language-specific files	num=1
+2026-10-13T11:24:58Z	INFO	[gobinary] Detecting vulnerabilities...
+2026-10-13T11:24:58Z	INFO	Loaded	file_path="trivy.yaml"
+2026-10-13T11:24:58Z	INFO	Loaded	file_path="trivy.yaml"
+2026-10-13T11:24:58Z	WARN	[report] No enabled scanners found. Summary table will not be displayed.
+GATE PASSED: no fixable HIGH or CRITICAL vulnerabilities in <gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:c185ee8cd556b21f82d035d1b64c292672932526bdde6c6264dda7eccce4a644.
+Saving cache for successful job
+Creating cache trivy-db-protected...
+.trivycache/: found 748 matching artifact files and directories
+No URL provided, cache will not be uploaded to shared cache server. Cache will be stored only locally.
+Created cache
+Uploading artifacts for successful job
+Uploading artifacts...
+reports/trivy-image.json: found 1 matching artifact files and directories
+reports/trivy-image.txt: found 1 matching artifact files and directories
+Uploading artifacts as "archive" to coordinator... 201 Created  correlation_id=[redacted] id=3547 responseStatus=201 Created token=[redacted]
+Uploading artifacts...
+reports/gl-container-scanning-report.json: found 1 matching artifact files and directories
+Uploading artifacts as "container_scanning" to coordinator... 201 Created  correlation_id=[redacted] id=3547 responseStatus=201 Created token=[redacted]
+Cleaning up project directory and file based variables
+Job succeeded
+
+================================================================================
+job 3550
+================================================================================
+Running with gitlab-runner 18.8.0 (9ffb4aa0)
+  on docker1-vm U7dwBNCWq, system ID: s_e2e55318b32c
+Preparing the "docker" executor
+Using Docker executor with image aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Using effective pull policy of [always] for container aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+Pulling docker image aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Using docker image sha256:6d93f1ec925b37c5ce785e416b86cba056e10c8c2914a59a8ea7be18115d6764 for aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa with digest aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Preparing environment
+Using effective pull policy of [always] for container sha256:34b0f89f2c14d52a1417a420619c6802f6809c75a6c39e41103117e478465f8d
+Running on runner-u7dwbncwq-project-26-concurrent-1 via docker1-vm...
+Getting source from Git repository
+Gitaly correlation ID: 01M4TG453YE7HR10D76Z664J24
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /builds/ai-lab/orders-api-pipeline/.git/
+Created fresh repository.
+Checking out 7ed1ab7d as detached HEAD (ref is main)...
+Removing checkov-junit.xml
+Removing rendered/
+Skipping Git submodules setup
+Restoring cache
+Checking cache for trivy-db-protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted.
+Successfully extracted cache
+Downloading artifacts
+Downloading artifacts for build-image (3544)...
+Downloading artifacts from coordinator... ok        correlation_id=[redacted] host=<gitlab-host> id=3544 responseStatus=200 OK token=[redacted]
+Executing "step_script" stage of the job script
+Using effective pull policy of [always] for container aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+Using docker image sha256:6d93f1ec925b37c5ce785e416b86cba056e10c8c2914a59a8ea7be18115d6764 for aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa with digest aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+$ trivy image --format cyclonedx --output sbom.cdx.json "$IMAGE_REF"
+2026-10-13T11:24:56Z	INFO	Loaded	file_path="trivy.yaml"
+2026-10-13T11:24:56Z	INFO	"--format cyclonedx" disables security scanning. Specify "--scanners vuln" explicitly if you want to include vulnerabilities in the "cyclonedx" report.
+2026-10-13T11:24:56Z	INFO	Number of language-specific files	num=1
+Saving cache for successful job
+Creating cache trivy-db-protected...
+.trivycache/: found 3 matching artifact files and directories
+No URL provided, cache will not be uploaded to shared cache server. Cache will be stored only locally.
+Created cache
+Uploading artifacts for successful job
+Uploading artifacts...
+sbom.cdx.json: found 1 matching artifact files and directories
+Uploading artifacts as "archive" to coordinator... 201 Created  correlation_id=[redacted] id=3550 responseStatus=201 Created token=[redacted]
+Uploading artifacts...
+sbom.cdx.json: found 1 matching artifact files and directories
+Uploading artifacts as "cyclonedx" to coordinator... 201 Created  correlation_id=[redacted] id=3550 responseStatus=201 Created token=[redacted]
+Cleaning up project directory and file based variables
+Job succeeded
+
+================================================================================
+job 3554
+================================================================================
+Running with gitlab-runner 18.8.0 (9ffb4aa0)
+  on docker1-vm U7dwBNCWq, system ID: s_e2e55318b32c
+Preparing the "docker" executor
+Using Docker executor with image alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 ...
+Starting service <gitlab-host>/ai-lab/orders-api-pipeline:7ed1ab7d...
+Using effective pull policy of [always] for container <gitlab-host>:5050/ai-lab/orders-api-pipeline:7ed1ab7d
+Authenticating with credentials from job payload (GitLab Registry)
+Pulling docker image <gitlab-host>:5050/ai-lab/orders-api-pipeline:7ed1ab7d ...
+Using docker image sha256:c5d51968a91553c3ae9800737394f845873e25a11d99863bd77649bbc8b27604 for <gitlab-host>:5050/ai-lab/orders-api-pipeline:7ed1ab7d with digest <gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:c185ee8cd556b21f82d035d1b64c292672932526bdde6c6264dda7eccce4a644 ...
+Waiting for services to be up and running (timeout 30 seconds)...
+Using effective pull policy of [always] for container alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+Pulling docker image alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 ...
+Using docker image sha256:320994c3b997e2ec6433f717f153e108023c5bec8fefa8d76b83451d16d05ea8 for alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 with digest alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 ...
+Preparing environment
+Using effective pull policy of [always] for container sha256:34b0f89f2c14d52a1417a420619c6802f6809c75a6c39e41103117e478465f8d
+Running on runner-u7dwbncwq-project-26-concurrent-0 via docker1-vm...
+Getting source from Git repository
+Gitaly correlation ID: 01M4TG4PHX0FC6GKFDXST2ATR7
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /builds/ai-lab/orders-api-pipeline/.git/
+Created fresh repository.
+Checking out 7ed1ab7d as detached HEAD (ref is main)...
+Removing .trivycache/
+Removing image-digest.txt
+Removing reports/
+Skipping Git submodules setup
+Downloading artifacts
+Downloading artifacts for build-image (3544)...
+Downloading artifacts from coordinator... ok        correlation_id=[redacted] host=<gitlab-host> id=3544 responseStatus=200 OK token=[redacted]
+Executing "step_script" stage of the job script
+Using effective pull policy of [always] for container alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+Using docker image sha256:320994c3b997e2ec6433f717f153e108023c5bec8fefa8d76b83451d16d05ea8 for alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 with digest alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 ...
+$ apk add --no-cache bash curl
+( 1/13) Installing ncurses-terminfo-base (6.6_p20260516-r0)
+( 2/13) Installing libncursesw (6.6_p20260516-r0)
+( 3/13) Installing readline (8.3.3-r1)
+( 4/13) Installing bash (5.3.9-r1)
+  Executing bash-5.3.9-r1.post-install
+( 5/13) Installing brotli-libs (1.2.0-r1)
+( 6/13) Installing c-ares (1.34.8-r0)
+( 7/13) Installing libunistring (1.4.2-r0)
+( 8/13) Installing libidn2 (2.3.8-r0)
+( 9/13) Installing nghttp2-libs (1.70.0-r0)
+(10/13) Installing libpsl (0.21.5-r3)
+(11/13) Installing zstd-libs (1.5.7-r2)
+(12/13) Installing libcurl (8.22.0-r0)
+(13/13) Installing curl (8.22.0-r0)
+Executing busybox-1.37.0-r31.trigger
+OK: 15.1 MiB in 29 packages
+$ for i in $(seq 1 30); do # collapsed multi-line command
+$ bash scripts/smoke.sh http://orders-api:8080
+smoke test against http://orders-api:8080
+ok    GET /healthz                       200
+ok    GET /readyz                        200
+ok    POST /orders                       201
+ok    GET /orders/{id}                   200
+ok    GET /orders                        200
+ok    GET /orders/{unknown} is 404       404
+ok    POST /orders invalid is 422        422
+smoke test passed (order 1d2c8a2659614443)
+Cleaning up project directory and file based variables
+Job succeeded
+
+================================================================================
+job 3555
+================================================================================
+Running with gitlab-runner 18.8.0 (9ffb4aa0)
+  on docker1-vm U7dwBNCWq, system ID: s_e2e55318b32c
+Preparing the "docker" executor
+Using Docker executor with image alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 ...
+Using effective pull policy of [always] for container alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+Pulling docker image alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 ...
+Using docker image sha256:320994c3b997e2ec6433f717f153e108023c5bec8fefa8d76b83451d16d05ea8 for alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 with digest alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 ...
+Preparing environment
+Using effective pull policy of [always] for container sha256:34b0f89f2c14d52a1417a420619c6802f6809c75a6c39e41103117e478465f8d
+Running on runner-u7dwbncwq-project-26-concurrent-0 via docker1-vm...
+Getting source from Git repository
+Gitaly correlation ID: 01M4TGJJ2AW607D23NS679N91W
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /builds/ai-lab/orders-api-pipeline/.git/
+Created fresh repository.
+Checking out 7ed1ab7d as detached HEAD (ref is main)...
+Removing .trivycache/
+Removing image-digest.txt
+Removing reports/
+Skipping Git submodules setup
+Downloading artifacts
+Downloading artifacts for build-image (3544)...
+Downloading artifacts from coordinator... ok        correlation_id=[redacted] host=<gitlab-host> id=3544 responseStatus=200 OK token=[redacted]
+Executing "step_script" stage of the job script
+Using effective pull policy of [always] for container alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+Using docker image sha256:320994c3b997e2ec6433f717f153e108023c5bec8fefa8d76b83451d16d05ea8 for alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 with digest alpine@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 ...
+$ apk add --no-cache bash curl
+( 1/13) Installing ncurses-terminfo-base (6.6_p20260516-r0)
+( 2/13) Installing libncursesw (6.6_p20260516-r0)
+( 3/13) Installing readline (8.3.3-r1)
+( 4/13) Installing bash (5.3.9-r1)
+  Executing bash-5.3.9-r1.post-install
+( 5/13) Installing brotli-libs (1.2.0-r1)
+( 6/13) Installing c-ares (1.34.8-r0)
+( 7/13) Installing libunistring (1.4.2-r0)
+( 8/13) Installing libidn2 (2.3.8-r0)
+( 9/13) Installing nghttp2-libs (1.70.0-r0)
+(10/13) Installing libpsl (0.21.5-r3)
+(11/13) Installing zstd-libs (1.5.7-r2)
+(12/13) Installing libcurl (8.22.0-r0)
+(13/13) Installing curl (8.22.0-r0)
+Executing busybox-1.37.0-r31.trigger
+OK: 15.1 MiB in 29 packages
+$ sh scripts/fetch-verified.sh "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" "$KUBECTL_SHA256" /usr/local/bin/kubectl
+fetch-verified: ok kubectl sha256=65691ff77eb6fa44c908b77a1082c9f092c3b9733b5cefabec0d1104890e21a8
+$ chmod +x /usr/local/bin/kubectl
+$ bash scripts/deploy-staging.sh
+KUBECONFIG_B64 is not set (or this ref is not protected).
+Nothing was deployed. To enable this job, see docs/SETUP-GITLAB.md, step 5.
+Cleaning up project directory and file based variables
+Job succeeded

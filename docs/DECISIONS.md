@@ -219,3 +219,66 @@ One short entry per decision: context, decision, why. Newest last.
 - **Why:** The deploy step stays visible in the pipeline graph. The cost is
   that GitLab records a "deployment" to the `staging` environment even though
   nothing was deployed; the job log states that plainly.
+
+## D-022: The pipeline runs on a self-hosted GitLab instance
+
+- **Context:** The plan assumed gitlab.com shared runners. The GitLab that
+  was actually available is a private, self-hosted GitLab 18.9 with one
+  Docker runner and a container registry.
+- **Decision:** Run the pipeline there, in a project inside a group reserved
+  for automation, pushing over HTTPS with that group's access token. Evidence
+  from it has the instance hostname replaced with `<gitlab-host>`.
+- **Why:** A real green pipeline is worth more than a described one. The
+  pipeline file has no instance-specific values, so it stays portable to
+  gitlab.com. The cost is no public pipeline page or badge.
+
+## D-023: Images are built with Kaniko, not Docker-in-Docker
+
+- **Context:** The brief's default was `docker` + `docker:dind` with TLS. On
+  the first GitLab run the dind service failed to start: the runner does not
+  allow privileged containers (`mount: permission denied`).
+- **Decision:** `build-image` uses Kaniko (the maintained
+  `osscontainertools/kaniko` fork; the original Google project is archived),
+  pinned by digest. It supersedes the dind build. Local `make image` still
+  uses `docker build` on the same Dockerfile.
+- **Why:** The runner's policy is a sensible one and not this project's to
+  change. A daemonless build removes the need for privilege altogether, which
+  is also the better security posture. Verified: green on GitLab, digest
+  hand-off to the scan jobs works.
+
+## D-024: `smoke-test` always runs; the kind `deploy-test` is opt-in
+
+- **Context:** The kind-based deploy test needs Docker-in-Docker, so it
+  cannot run on the unprivileged runner. The brief's fallback was to reduce it
+  to render-and-validate, which `render-manifests`, `kubeconform` and
+  `kube-score` already do.
+- **Decision:** Add `smoke-test`, which runs the built image as a GitLab
+  service container and runs `scripts/smoke.sh` against it; it needs no
+  privileges. Keep `deploy-test` unchanged but create it only when
+  `PRIVILEGED_RUNNER` is `"true"`. Downstream jobs need `smoke-test` and,
+  optionally, `deploy-test`. This narrows D-018 and D-019: the gates now
+  guard `smoke-test` everywhere and `deploy-test` where it exists.
+- **Why:** Every pipeline still executes the artifact it built, and the full
+  Kubernetes test is one variable away on a runner that allows it. The
+  Kubernetes deploy itself is evidenced locally and in the dind rehearsal,
+  not on GitLab.
+
+## D-025: Releases are retagged with crane
+
+- **Context:** D-020 used `docker buildx imagetools create`, which was run
+  from a job with a dind service for `docker login`.
+- **Decision:** `release-image` uses `crane tag`, then asserts that the new
+  tag resolves to `IMAGE_REF`.
+- **Why:** Same registry-side retag, no daemon, and an explicit check that
+  the released tag is the tested digest.
+
+## D-026: `v1.0.0` was moved before it was first pushed
+
+- **Context:** `v1.0.0` was created locally on the commit that still built
+  with Docker-in-Docker, before any GitLab run. That commit's pipeline cannot
+  pass on the runner in use.
+- **Decision:** Move the local tag to the commit that includes the Kaniko
+  build and the GitLab evidence. `v0.1.0` and `v0.5.0` keep their commits and
+  are pushed with `-o ci.skip`.
+- **Why:** The tag had never left the machine, so nothing depended on it, and
+  a release tag should point at a commit whose pipeline passes.

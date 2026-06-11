@@ -44,7 +44,7 @@ GitLab account.
 
 🛑 **Checkpoint A:** owner creates the GitLab project, pushes, confirms the pipeline is green.
 
-- [ ] Pipeline confirmed green on GitLab (not yet run: needs the owner's account)
+- [x] Pipeline confirmed green on GitLab (after the Kaniko change; see "GitLab run" below)
 
 ## Phase 4: `feat/security-scanning`
 
@@ -79,7 +79,7 @@ GitLab account.
 
 🛑 **Checkpoint B:** owner runs the full pipeline (including a tag), sends results, adds screenshots under `docs/evidence/screenshots/`.
 
-- [ ] Full pipeline run on GitLab, including a tag (not yet run: needs the owner account)
+- [x] Full pipeline run on GitLab, including a tag (see "GitLab run" below)
 - [ ] Screenshots added under `docs/evidence/screenshots/`
 - [ ] `deploy-staging` success path exercised against a real cluster
 
@@ -101,19 +101,26 @@ GitLab account.
 
 ## Definition of done
 
-- [ ] Pipeline green on GitLab: lint → test → build → scan → deploy-test (→ manual deploy, tag release). **Open: not yet run on GitLab; needs the owner account.** Every job has been run locally in its pinned image.
+- [x] Pipeline green on GitLab: lint → test → build → scan → smoke-test (→ manual deploy, tag release). Self-hosted instance, unprivileged runner; see `docs/evidence/gitlab/`
 - [x] Final image measured and recorded next to the naive image in `docs/evidence/image-size.txt` (7.30 MB vs 1020.32 MB)
-- [x] A scan gate demonstrably blocks a vulnerable image (evidence file; local run, GitLab job log still to capture)
+- [x] A scan gate demonstrably blocks a vulnerable image (local run and GitLab job log)
 - [x] Manifests pass kubeconform strict, kube-score and Checkov
 - [x] README, PIPELINE, SECURITY, RUNBOOK written from real outputs
 - [x] History is feature-branch merges with Conventional Commits and no secrets
 - [x] Tags `v0.1.0`, `v0.5.0`, `v1.0.0` exist locally
 
-## Still open (all need the GitLab project)
+## GitLab run
 
-- [ ] `glab ci lint` against the real project
-- [ ] First green pipeline on `main`; badge resolves
-- [ ] `demo/vulnerable-base` pushed; failing `trivy-image` job log saved as `docs/evidence/gate-blocks-vulnerable-image-gitlab.txt`
-- [ ] Tag pipeline for `v1.0.0`: `release-image` and `release`
-- [ ] Three screenshots under `docs/evidence/screenshots/`; README placeholders replaced
+- [x] `glab ci lint` against the real project: valid
+- [x] First pipeline on `main`: failed at `build-image` (runner is not privileged, dind cannot start)
+- [x] Build moved to Kaniko, `smoke-test` added, kind `deploy-test` made opt-in (D-023, D-024)
+- [x] Green pipeline on `main`
+- [x] `demo/vulnerable-base` pushed: only `trivy-image` fails; job log saved
+- [x] `deploy-staging` played without a kubeconfig: skips cleanly
+
+## Still open
+
+- [ ] Kind-based `deploy-test` on a GitLab runner (needs a privileged runner)
 - [ ] `deploy-staging` against a real cluster with `KUBECONFIG_B64`
+- [ ] Three screenshots under `docs/evidence/screenshots/`; README placeholders replaced
+- [ ] Push to GitHub (`origin`)

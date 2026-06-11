@@ -1,0 +1,24 @@
+# Pipeline 559 on demo/vulnerable-base: blocked by the trivy-image gate
+# Real GitLab CI output, fetched through the GitLab API on 2026-10-13.
+# Self-hosted GitLab 18.9 EE, gitlab-runner 18.8, Docker executor, NOT privileged.
+# The instance hostname is replaced with <gitlab-host>; upload tokens and
+# correlation ids are redacted. Nothing else is edited.
+
+pipeline 559: failed (waited 0s)
+  3556 lint         go-lint            success       8s
+  3557 lint         hadolint           success       5s
+  3558 test         go-test            success      17s
+  3559 build        build-image        success      27s
+  3560 scan         trivy-fs           success      12s
+  3561 scan         trivy-config       success      13s
+  3562 scan         trivy-image        failed        9s script_failure
+  3563 scan         checkov            success      17s
+  3564 scan         gitleaks           success       6s
+  3565 scan         sbom               success       7s
+  3566 scan         render-manifests   success       5s
+  3567 scan         kubeconform        success       7s
+  3568 scan         kube-score         success       5s
+  3569 deploy-test  smoke-test         skipped    Nones
+
+Only trivy-image fails. Lint, tests, config scans, Checkov and manifest checks
+all pass on this branch, and smoke-test is skipped because a gate failed.

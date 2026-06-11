@@ -139,9 +139,25 @@ is the output of the gate script against two images:
   code 1**.
 - The hardened image: no findings, exit code 0.
 
-That run was local, using the script the pipeline job calls. The GitLab job
-log for the same branch is still to be captured
-([SETUP-GITLAB.md](SETUP-GITLAB.md), step 7).
+That run was local, using the script the pipeline job calls. On GitLab the
+same branch produces the same result: `trivy-image` fails with 36 findings
+while every other job passes, and the pipeline stops before `smoke-test`
+([`evidence/gate-blocks-vulnerable-image-gitlab.txt`](evidence/gate-blocks-vulnerable-image-gitlab.txt),
+[`evidence/gitlab/pipeline-gate-blocked.txt`](evidence/gitlab/pipeline-gate-blocked.txt)).
+
+## Build environment
+
+The pipeline needs no privileged runner. `build-image` uses Kaniko, which
+builds in user space without a Docker daemon, so a compromised build step is
+confined to an ordinary container instead of being root on the runner host.
+The only job that needs Docker-in-Docker is the optional kind-based
+`deploy-test`, which is off unless `PRIVILEGED_RUNNER` is set.
+
+What that does not cover: Kaniko runs as root inside its container, and the
+job token it uses can push to this project's registry. A malicious change to
+the Dockerfile on a branch can therefore push an image under that branch's
+tag. It cannot reach the version tags (release jobs run only on `v*` tags) or
+the staging kubeconfig (a protected variable).
 
 ## Suppressions
 
