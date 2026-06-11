@@ -311,6 +311,10 @@ Tag pipelines for `vMAJOR.MINOR.PATCH` only.
 | `release-image` | `crane tag "$IMAGE_REF" "$CI_COMMIT_TAG"`: adds the version tag to the existing manifest in the registry, then checks the tag resolves to the same digest |
 | `release` | Generates notes with `scripts/release-notes.sh` (image tag, digest, commits since the previous tag) and creates the GitLab release through the `release:` keyword |
 
+Run for `v1.0.0`: [`evidence/gitlab/pipeline-tag-release.txt`](evidence/gitlab/pipeline-tag-release.txt).
+Its published notes say "deploy-tested"; the notes script has since been
+corrected to "smoke-tested", which is what that pipeline did.
+
 **Why retag instead of rebuild.** A tag pipeline runs every stage, so by the
 time `release-image` starts, one specific digest has been linted, tested,
 scanned and smoke-tested. Rebuilding for the release would produce a

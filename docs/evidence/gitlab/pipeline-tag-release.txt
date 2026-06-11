@@ -1,0 +1,166 @@
+# Tag pipeline 563 for v1.0.0: full pipeline plus release jobs
+# Real GitLab CI output, fetched through the GitLab API on 2026-10-13.
+# Self-hosted GitLab 18.9 EE, unprivileged Docker runner. Hostname replaced
+# with <gitlab-host>; upload tokens and correlation ids redacted.
+
+pipeline 563: success (waited 0s)
+  3585 lint         go-lint            success       9s
+  3586 lint         hadolint           success       5s
+  3587 test         go-test            success      17s
+  3588 build        build-image        success      23s
+  3589 scan         trivy-fs           success      12s
+  3590 scan         trivy-config       success      12s
+  3591 scan         trivy-image        success      17s
+  3592 scan         checkov            success      14s
+  3593 scan         gitleaks           success       6s
+  3594 scan         sbom               success       7s
+  3595 scan         render-manifests   success       5s
+  3596 scan         kubeconform        success       6s
+  3597 scan         kube-score         success       5s
+  3598 deploy-test  smoke-test         success       6s
+  3599 deploy       deploy-staging     manual     Nones
+  3600 release      release-image      success      23s
+  3601 release      release            success      20s
+
+================================================================================
+job 3600
+================================================================================
+Running with gitlab-runner 18.8.0 (9ffb4aa0)
+  on docker1-vm U7dwBNCWq, system ID: s_e2e55318b32c
+Preparing the "docker" executor
+Using Docker executor with image gcr.io/go-containerregistry/crane/debug:v0.22.1@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b ...
+Using effective pull policy of [always] for container gcr.io/go-containerregistry/crane/debug:v0.22.1@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b
+Pulling docker image gcr.io/go-containerregistry/crane/debug:v0.22.1@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b ...
+Using docker image sha256:3d18d91796a906167d2978f80ea92805ddb6b54d9a71f72376899259938e826f for gcr.io/go-containerregistry/crane/debug:v0.22.1@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b with digest gcr.io/go-containerregistry/crane/debug@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b ...
+Preparing environment
+Using effective pull policy of [always] for container sha256:34b0f89f2c14d52a1417a420619c6802f6809c75a6c39e41103117e478465f8d
+Running on runner-u7dwbncwq-project-26-concurrent-0 via docker1-vm...
+Getting source from Git repository
+Gitaly correlation ID: 01M4TH1FAVP2Z23R38B7CN36XD
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /builds/ai-lab/orders-api-pipeline/.git/
+Created fresh repository.
+Checking out fb63e1b2 as detached HEAD (ref is v1.0.0)...
+Removing image-digest.txt
+Skipping Git submodules setup
+Downloading artifacts
+Downloading artifacts for build-image (3588)...
+Downloading artifacts from coordinator... ok        correlation_id=[redacted] host=<gitlab-host> id=3588 responseStatus=200 OK token=[redacted]
+Executing "step_script" stage of the job script
+Using effective pull policy of [always] for container gcr.io/go-containerregistry/crane/debug:v0.22.1@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b
+Using docker image sha256:3d18d91796a906167d2978f80ea92805ddb6b54d9a71f72376899259938e826f for gcr.io/go-containerregistry/crane/debug:v0.22.1@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b with digest gcr.io/go-containerregistry/crane/debug@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b ...
+$ echo "$CI_REGISTRY_PASSWORD" | crane auth login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+WARNING! Your credentials are stored unencrypted in '/root/.docker/config.json'.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/go/credential-store/
+2026/10/13 11:41:13 logged in via /root/.docker/config.json
+$ crane tag "$IMAGE_REF" "$CI_COMMIT_TAG"
+2026/10/13 11:41:14 <gitlab-host>:5050/ai-lab/orders-api-pipeline:v1.0.0: digest: sha256:3054ebfde1aad7227c777ff9f32bbe455c2c5ace51cef5f4fb550beafe55cf6e size: 427
+$ RELEASED="$(crane digest "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG")"
+$ echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG -> $RELEASED"
+<gitlab-host>:5050/ai-lab/orders-api-pipeline:v1.0.0 -> sha256:3054ebfde1aad7227c777ff9f32bbe455c2c5ace51cef5f4fb550beafe55cf6e
+$ test "$CI_REGISTRY_IMAGE@$RELEASED" = "$IMAGE_REF"
+$ echo "RELEASE_IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > release.env
+$ echo "RELEASE_IMAGE_REF=$IMAGE_REF" >> release.env
+Uploading artifacts for successful job
+Uploading artifacts...
+release.env: found 1 matching artifact files and directories
+Uploading artifacts as "dotenv" to coordinator... 201 Created  correlation_id=[redacted] id=3600 responseStatus=201 Created token=[redacted]
+Cleaning up project directory and file based variables
+Job succeeded
+
+================================================================================
+job 3601
+================================================================================
+Running with gitlab-runner 18.8.0 (9ffb4aa0)
+  on docker1-vm U7dwBNCWq, system ID: s_e2e55318b32c
+Preparing the "docker" executor
+Using Docker executor with image registry.gitlab.com/gitlab-org/cli:v1.118.0@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2 ...
+Using effective pull policy of [always] for container registry.gitlab.com/gitlab-org/cli:v1.118.0@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2
+Pulling docker image registry.gitlab.com/gitlab-org/cli:v1.118.0@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2 ...
+Using docker image sha256:1d23cd3f01099d0f24d590b4a11288ddd27235dc93a0446cafc278a53f832253 for registry.gitlab.com/gitlab-org/cli:v1.118.0@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2 with digest registry.gitlab.com/gitlab-org/cli@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2 ...
+Preparing environment
+Using effective pull policy of [always] for container sha256:34b0f89f2c14d52a1417a420619c6802f6809c75a6c39e41103117e478465f8d
+Running on runner-u7dwbncwq-project-26-concurrent-0 via docker1-vm...
+Getting source from Git repository
+Gitaly correlation ID: 01M4TH26RZF982XQQG2KTXT4M3
+Fetching changes...
+Reinitialized existing Git repository in /builds/ai-lab/orders-api-pipeline/.git/
+Created fresh repository.
+Checking out fb63e1b2 as detached HEAD (ref is v1.0.0)...
+Removing image-digest.txt
+Removing release.env
+Skipping Git submodules setup
+Executing "step_script" stage of the job script
+Using effective pull policy of [always] for container registry.gitlab.com/gitlab-org/cli:v1.118.0@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2
+Using docker image sha256:1d23cd3f01099d0f24d590b4a11288ddd27235dc93a0446cafc278a53f832253 for registry.gitlab.com/gitlab-org/cli:v1.118.0@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2 with digest registry.gitlab.com/gitlab-org/cli@sha256:3f0a591b3b96c39ac8e28480ee99bb93201b7bcea1fbca7ed50c034098111db2 ...
+$ sh scripts/release-notes.sh "$CI_COMMIT_TAG" "$CI_REGISTRY_IMAGE" "$RELEASE_IMAGE_REF" > release-notes.md
+$ cat release-notes.md
+## Image
+```
+<gitlab-host>:5050/ai-lab/orders-api-pipeline:v1.0.0
+<gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:3054ebfde1aad7227c777ff9f32bbe455c2c5ace51cef5f4fb550beafe55cf6e
+```
+The tag and the digest are the same image: the one this pipeline built,
+scanned and deploy-tested. Deploy by digest.
+## Changes since v0.5.0
+- docs: record the gitlab run and the unprivileged build (35843e3)
+- ci: build with kaniko and smoke-test without privileges (4ae1a2a)
+- chore: final cleanup for v1.0.0 (981fa1a)
+- docs: add pipeline, security and runbook docs (1817dd5)
+- docs: write readme with architecture and results (4512516)
+- docs: document deploy and rollback flow (493a17e)
+- fix: skip rollback wait when there is no previous revision (4ccecf0)
+- ci: add tag-based release job (c113ac9)
+- ci: add manual staging deploy job (97a2a78)
+- ci: add ephemeral kind deploy test (f543ef1)
+Executing "step_release" stage of the job script
+$ if command -v glab &> /dev/null; then # collapsed multi-line command
+✓ Stored your credentials in the configuration file.
+What's new in glab v1.118.0
+  Run: glab whatsnew
+A new version of glab is available
+  v1.118.0 → v1.122.0
+  Release notes: https://gitlab.com/gitlab-org/cli/-/releases/v1.122.0
+• Creating or updating release repo=ai-lab/orders-api-pipeline tag=v1.0.0
+✓ Release created:	url=https://<gitlab-host>/ai-lab/orders-api-pipeline/-/releases/v1.0.0
+✓ Skipping closing milestones
+✓ Release succeeded after 0.27 seconds.
+Uploading artifacts for successful job
+Uploading artifacts...
+release-notes.md: found 1 matching artifact files and directories
+Uploading artifacts as "archive" to coordinator... 201 Created  correlation_id=[redacted] id=3601 responseStatus=201 Created token=[redacted]
+Cleaning up project directory and file based variables
+Job succeeded
+
+================================================================================
+GitLab release object (API: projects/:id/releases/v1.0.0)
+================================================================================
+name: orders-api v1.0.0
+tag_name: v1.0.0
+commit: fb63e1b2
+released_at: 2026-10-13T11:41:34.485Z
+description:
+## Image
+
+```
+<gitlab-host>:5050/ai-lab/orders-api-pipeline:v1.0.0
+<gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:3054ebfde1aad7227c777ff9f32bbe455c2c5ace51cef5f4fb550beafe55cf6e
+```
+
+The tag and the digest are the same image: the one this pipeline built,
+scanned and deploy-tested. Deploy by digest.
+
+## Changes since v0.5.0
+
+- docs: record the gitlab run and the unprivileged build (35843e3)
+- ci: build with kaniko and smoke-test without privileges (4ae1a2a)
+- chore: final cleanup for v1.0.0 (981fa1a)
+- docs: add pipeline, security and runbook docs (1817dd5)
+- docs: write readme with architecture and results (4512516)
+- docs: document deploy and rollback flow (493a17e)
+- fix: skip rollback wait when there is no previous revision (4ccecf0)
+- ci: add tag-based release job (c113ac9)
+- ci: add manual staging deploy job (97a2a78)
+- ci: add ephemeral kind deploy test (f543ef1)
+

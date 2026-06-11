@@ -15,7 +15,7 @@ if [ -n "$prev" ]; then range="${prev}..${tag}"; else range="$tag"; fi
 printf '## Image\n\n'
 printf '```\n%s:%s\n%s\n```\n\n' "$repo" "$tag" "$digest_ref"
 printf 'The tag and the digest are the same image: the one this pipeline built,\n'
-printf 'scanned and deploy-tested. Deploy by digest.\n\n'
+printf 'scanned and smoke-tested. Deploy by digest.\n\n'
 
 if [ -n "$prev" ]; then
   printf '## Changes since %s\n\n' "$prev"
