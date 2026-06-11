@@ -1,6 +1,5 @@
 # orders-api-pipeline
 
-[![pipeline status](https://gitlab.com/abhichandra-v/orders-api-pipeline/badges/main/pipeline.svg)](https://gitlab.com/abhichandra-v/orders-api-pipeline/-/pipelines)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A GitLab CI/CD pipeline that builds a hardened container image, blocks the
@@ -13,15 +12,19 @@ image and the gates are the point.
 | **Image** | 1020.32 MB naive → **7.30 MB** hardened (139.7 : 1), measured |
 | **Gates** | 7 scan gates, plus lint and tests; any finding fails the pipeline |
 | **Proof** | A branch with a vulnerable base image is blocked: 36 HIGH/CRITICAL findings, exit code 1 |
-| **Deploy** | Ephemeral Kubernetes cluster per pipeline, smoke test, manual staging deploy, tag-based release |
+| **Deploy** | Smoke test of the built image in every pipeline, Kubernetes deploy tested on kind, manual staging deploy, tag-based release |
+| **Runs on** | An unprivileged GitLab runner: daemonless Kaniko build, no Docker-in-Docker required |
 
 Every number on this page comes from a file in [`docs/evidence/`](docs/evidence/).
 
-> **What has and has not been run.** Everything here has been run locally, in
-> the same pinned tool images the pipeline uses, and the evidence files are
-> that output. The pipeline has **not yet run on GitLab**, so the badge above
-> will not resolve and the three screenshots below are placeholders until the
-> project is created and pushed ([docs/SETUP-GITLAB.md](docs/SETUP-GITLAB.md)).
+> **What has and has not been run.** The pipeline is green on a self-hosted
+> GitLab 18.9 instance, and the vulnerable demo branch is blocked there; the
+> job logs are in [`docs/evidence/gitlab/`](docs/evidence/gitlab/). That
+> instance is private, so there is no public pipeline badge, and the three
+> screenshots below are still placeholders. Its runner is not privileged, so
+> the Kubernetes deploy test (which needs Docker-in-Docker) has been run
+> locally and in a local dind rehearsal, not on GitLab. A staging deploy to a
+> real cluster has not been run.
 
 ## Architecture
 
@@ -32,7 +35,8 @@ flowchart LR
   gl --> ci[GitLab CI pipeline]
   ci -->|build and push by digest| reg[(GitLab<br/>container registry)]
   reg -->|scan the digest| ci
-  ci -->|deploy-test| kind[Ephemeral kind cluster<br/>inside the job]
+  ci -->|smoke-test| svc[Built image as a<br/>service container]
+  ci -.->|privileged runners only| kind[Ephemeral kind cluster<br/>inside the job]
   ci -.->|manual| stg[Staging cluster]
   ci -.->|v* tag| rel[GitLab release<br/>and version tag on the same digest]
 ```
@@ -67,7 +71,8 @@ flowchart LR
     D8[sbom]
   end
   subgraph deploy-test
-    E1[deploy-test<br/>kind + smoke]
+    E0[smoke-test]
+    E1[deploy-test<br/>kind, privileged runners]
   end
   subgraph deploy
     F1[deploy-staging<br/>manual]
@@ -133,7 +138,8 @@ Every job below exits non-zero on a finding, and none is allowed to fail.
 | Best-practice scoring | Missing probes, limits, PDB, NetworkPolicy; weak security context | `kube-score` |
 | **Image scan** | HIGH/CRITICAL CVEs with a fix, in the exact digest that was pushed | `trivy-image` |
 | SBOM (records, does not gate) | Component inventory for later CVE lookups | `sbom` |
-| Deploy to a real cluster | A pod that validates but does not start, wrong probes, unenforced policies | `deploy-test` |
+| Run the built image | An image that builds and scans clean but does not start or serve | `smoke-test` |
+| Deploy to a real cluster (privileged runners only) | A pod that validates but does not start, wrong probes, unenforced policies | `deploy-test` |
 
 **The gate demonstrably blocks.** The `demo/vulnerable-base` branch changes
 one line, swapping the runtime base for end-of-life `alpine:3.12.0`. Lint,
@@ -146,9 +152,14 @@ GATE FAILED: orders-api:vulnerable-demo has HIGH or CRITICAL vulnerabilities wit
 exit code: 1
 ```
 
-Full log, with the passing run of the hardened image beside it:
+The same happens on GitLab. Pipeline for `demo/vulnerable-base`: every job
+passes except `trivy-image`, which fails with the same 36 findings, and
+`smoke-test` is skipped because a gate failed:
+[`gitlab/pipeline-gate-blocked.txt`](docs/evidence/gitlab/pipeline-gate-blocked.txt),
+job log in
+[`gate-blocks-vulnerable-image-gitlab.txt`](docs/evidence/gate-blocks-vulnerable-image-gitlab.txt).
+The local run, with the passing scan of the hardened image beside it:
 [`gate-blocks-vulnerable-image.txt`](docs/evidence/gate-blocks-vulnerable-image.txt).
-That run was local, using the script the pipeline job calls.
 
 Suppressions need a justification and a review date, and Trivy's expire on
 that date. The current list, and what each control does **not** catch, is in
@@ -217,11 +228,16 @@ pushed. There is no mirroring and no GitHub Actions workflow; nothing runs
 until the GitLab remote receives a push. The container registry and the
 releases live on GitLab.
 
+The GitLab side currently is a private, self-hosted instance. The pipeline
+has no dependency on it: registry paths come from `CI_REGISTRY_IMAGE`, and
+nothing needs a privileged runner, so the same file runs on gitlab.com.
+
 Setup: [docs/SETUP-GITLAB.md](docs/SETUP-GITLAB.md).
 
 ## Pipeline screenshots
 
-Placeholders until the pipeline has run on GitLab. The files do not exist yet.
+Placeholders: the files do not exist yet. The same information is available
+as text, from the GitLab API, in [`docs/evidence/gitlab/`](docs/evidence/gitlab/).
 
 | Screenshot | File |
 |---|---|
@@ -240,7 +256,10 @@ Placeholders until the pipeline has run on GitLab. The files do not exist yet.
 | Runs read-only, no capabilities, non-root | [`image-run-hardened.txt`](docs/evidence/image-run-hardened.txt) |
 | Lint, tests (coverage), scans and validation all pass | [`local-full-run.txt`](docs/evidence/local-full-run.txt) |
 | 78 tests pass under the race detector, 91.4% coverage | [`go-test.txt`](docs/evidence/go-test.txt) |
-| The image gate blocks a vulnerable image | [`gate-blocks-vulnerable-image.txt`](docs/evidence/gate-blocks-vulnerable-image.txt) |
+| The image gate blocks a vulnerable image (local) | [`gate-blocks-vulnerable-image.txt`](docs/evidence/gate-blocks-vulnerable-image.txt) |
+| **GitLab: green pipeline on `main`**, with build, scan, SBOM, smoke-test and staging-skip job logs | [`gitlab/pipeline-main-green.txt`](docs/evidence/gitlab/pipeline-main-green.txt) |
+| **GitLab: demo branch blocked** at `trivy-image` | [`gitlab/pipeline-gate-blocked.txt`](docs/evidence/gitlab/pipeline-gate-blocked.txt), [`gate-blocks-vulnerable-image-gitlab.txt`](docs/evidence/gate-blocks-vulnerable-image-gitlab.txt) |
+| GitLab: registry tags pushed by the pipeline | [`gitlab/registry.txt`](docs/evidence/gitlab/registry.txt) |
 | SBOM contents | [`image-sbom-summary.json`](docs/evidence/image-sbom-summary.json) |
 | Manifests pass kubeconform, kube-score, Checkov | [`k8s-validate.txt`](docs/evidence/k8s-validate.txt) |
 | Deploy to kind, pod security context, NetworkPolicy enforcement | [`kind-deploy-smoke.txt`](docs/evidence/kind-deploy-smoke.txt) |
@@ -248,9 +267,9 @@ Placeholders until the pipeline has run on GitLab. The files do not exist yet.
 | Staging deploy: skip, validation, dry run, failed rollout | [`deploy-staging-paths.txt`](docs/evidence/deploy-staging-paths.txt) |
 | Rollback | [`rollback.txt`](docs/evidence/rollback.txt) |
 
-Not yet evidenced, because it needs the GitLab project: a green pipeline, the
-blocked pipeline, the registry contents, a tag release, and a staging deploy
-to a real cluster.
+Not yet evidenced: the kind-based `deploy-test` job on a GitLab runner (it
+needs a privileged runner; this one is not), a staging deploy to a real
+cluster, and screenshots.
 
 ## Documentation
 

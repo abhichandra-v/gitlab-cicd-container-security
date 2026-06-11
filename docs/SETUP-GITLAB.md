@@ -4,7 +4,15 @@ The code is published on GitHub (`origin`). GitLab runs the pipeline from the
 same commits through a second remote (`gitlab`). These are the one-time steps
 to connect the two and get a first green pipeline.
 
-Replace `abhichandra-v` with your GitLab username if it differs.
+Replace `abhichandra-v` with your GitLab username or group if it differs. On
+a self-hosted instance, replace `gitlab.com` with its hostname as well; the
+pipeline itself needs no changes, because registry paths come from
+`CI_REGISTRY_IMAGE`.
+
+> This has been done once already, on a private self-hosted GitLab 18.9
+> instance, and the pipeline is green there
+> ([evidence](evidence/gitlab/)). The steps below are for setting it up
+> again elsewhere, for example on gitlab.com.
 
 ## 1. Create the GitLab project
 
@@ -28,8 +36,12 @@ glab repo create abhichandra-v/orders-api-pipeline --public --defaultBranch main
 
 **Settings → CI/CD → Runners**
 
-- "Instance runners" is **enabled for this project**. The pipeline uses the
-  `saas-linux-small-amd64` shared runners; no tags are needed.
+- "Instance runners" is **enabled for this project**. Any Linux Docker
+  runner works and no tags are needed. The runner does **not** have to be
+  privileged: the image is built with Kaniko.
+- Only if the runner allows privileged containers (gitlab.com shared runners
+  do): add a CI/CD variable `PRIVILEGED_RUNNER` = `true` to switch on the
+  kind-based `deploy-test` job. Leave it unset otherwise.
 - If GitLab shows "validate your account", do it. New accounts must verify
   (phone or card) before shared runners will pick up jobs. Until then every
   job sits in *pending*.
@@ -63,11 +75,19 @@ pipeline. What each one does depends on the `.gitlab-ci.yml` at that tag:
 | Tag | Pipeline |
 |---|---|
 | `v0.1.0` | None. The commit predates `.gitlab-ci.yml`. |
-| `v0.5.0` | Lint, test, build and scan. No deploy-test or release jobs existed yet, so no release is created. |
+| `v0.5.0` | Would run that commit's pipeline, which still built with Docker-in-Docker. Push it with CI skipped (below). |
 | `v1.0.0` | The full pipeline, including `release-image` and `release`. |
 
-If you would rather start with a single pipeline, push `main` first, wait for
-it to go green, then push the tags.
+Push `main` first and wait for it to go green. Then push the two historical
+tags without starting pipelines, and the release tag normally:
+
+```bash
+git push -o ci.skip gitlab v0.1.0 v0.5.0
+```
+
+```bash
+git push gitlab v1.0.0
+```
 
 ## 4. Confirm the pipeline
 
@@ -93,7 +113,7 @@ or **Build → Pipelines** in the UI. Expected on `main`:
 | test | `go-test` | Coverage shows in the pipeline; tests under the **Tests** tab |
 | build | `build-image` | Pushes `:<short-sha>` and `:main` to the registry |
 | scan | `trivy-fs`, `trivy-config`, `trivy-image`, `sbom`, `checkov`, `gitleaks`, `render-manifests`, `kube-score`, `kubeconform` | Any finding fails the pipeline |
-| deploy-test | `deploy-test` | kind cluster inside the job |
+| deploy-test | `smoke-test`, `deploy-test` | `smoke-test` always runs; `deploy-test` (kind) only with `PRIVILEGED_RUNNER=true` |
 | deploy | `deploy-staging` | Manual; skips cleanly without `KUBECONFIG_B64` |
 | release | `release-image`, `release` | Tag pipelines only |
 
@@ -143,7 +163,7 @@ To produce the blocked pipeline, push the demo branch (do **not** merge it):
 git push gitlab demo/vulnerable-base
 ```
 
-Save the failing `trivy-image` job log as
+The failing `trivy-image` job log from that pipeline is already saved as
 `docs/evidence/gate-blocks-vulnerable-image-gitlab.txt`.
 
 ## Keeping the two remotes in sync

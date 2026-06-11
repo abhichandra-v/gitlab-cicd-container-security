@@ -1,0 +1,13 @@
+# Container registry after pipelines 558 and 559
+# Real GitLab CI output, fetched through the GitLab API on 2026-10-13.
+# Self-hosted GitLab 18.9 EE, gitlab-runner 18.8, Docker executor, NOT privileged.
+# The instance hostname is replaced with <gitlab-host>; upload tokens and
+# correlation ids are redacted. Nothing else is edited.
+
+repository: ai-lab/orders-api-pipeline
+  tag: 4ae1a2a8 -> <gitlab-host>:5050/ai-lab/orders-api-pipeline:4ae1a2a8
+  tag: 7ed1ab7d -> <gitlab-host>:5050/ai-lab/orders-api-pipeline:7ed1ab7d
+  tag: 8f29efa7 -> <gitlab-host>:5050/ai-lab/orders-api-pipeline:8f29efa7
+  tag: ci-unprivileged-runner -> <gitlab-host>:5050/ai-lab/orders-api-pipeline:ci-unprivileged-runner
+  tag: demo-vulnerable-base -> <gitlab-host>:5050/ai-lab/orders-api-pipeline:demo-vulnerable-base
+  tag: main -> <gitlab-host>:5050/ai-lab/orders-api-pipeline:main
