@@ -117,6 +117,7 @@ GitLab account.
 - [x] Green pipeline on `main`
 - [x] `demo/vulnerable-base` pushed: only `trivy-image` fails; job log saved
 - [x] `deploy-staging` played without a kubeconfig: skips cleanly
+- [x] `v1.0.0` tag pipeline: `release-image` retags the tested digest, `release` creates the GitLab release
 
 ## Still open
 

@@ -260,6 +260,7 @@ as text, from the GitLab API, in [`docs/evidence/gitlab/`](docs/evidence/gitlab/
 | **GitLab: green pipeline on `main`**, with build, scan, SBOM, smoke-test and staging-skip job logs | [`gitlab/pipeline-main-green.txt`](docs/evidence/gitlab/pipeline-main-green.txt) |
 | **GitLab: demo branch blocked** at `trivy-image` | [`gitlab/pipeline-gate-blocked.txt`](docs/evidence/gitlab/pipeline-gate-blocked.txt), [`gate-blocks-vulnerable-image-gitlab.txt`](docs/evidence/gate-blocks-vulnerable-image-gitlab.txt) |
 | GitLab: registry tags pushed by the pipeline | [`gitlab/registry.txt`](docs/evidence/gitlab/registry.txt) |
+| **GitLab: `v1.0.0` tag pipeline**, registry-side retag of the tested digest, and the release | [`gitlab/pipeline-tag-release.txt`](docs/evidence/gitlab/pipeline-tag-release.txt) |
 | SBOM contents | [`image-sbom-summary.json`](docs/evidence/image-sbom-summary.json) |
 | Manifests pass kubeconform, kube-score, Checkov | [`k8s-validate.txt`](docs/evidence/k8s-validate.txt) |
 | Deploy to kind, pod security context, NetworkPolicy enforcement | [`kind-deploy-smoke.txt`](docs/evidence/kind-deploy-smoke.txt) |
