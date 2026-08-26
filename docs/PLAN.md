@@ -119,9 +119,15 @@ GitLab account.
 - [x] `deploy-staging` played without a kubeconfig: skips cleanly
 - [x] `v1.0.0` tag pipeline: `release-image` retags the tested digest, `release` creates the GitLab release
 
-## Still open
+## Closed without doing (infrastructure limits)
 
-- [ ] Kind-based `deploy-test` on a GitLab runner (needs a privileged runner)
-- [ ] `deploy-staging` against a real cluster with `KUBECONFIG_B64`
-- [ ] Three screenshots under `docs/evidence/screenshots/`; README placeholders replaced
-- [ ] Push to GitHub (`origin`)
+- [x] Kind-based `deploy-test` on a GitLab runner: not possible on an
+  unprivileged runner. Closed as opt-in (`PRIVILEGED_RUNNER`); evidenced
+  locally and in the dind rehearsal (D-024).
+- [x] `deploy-staging` against a real cluster: no cluster is connected to
+  the instance. The job, its skip path and its rollback path are tested
+  (`docs/evidence/deploy-staging-paths.txt`, `docs/evidence/gitlab/`).
+- [x] Screenshots: the instance is private and has no shareable UI. Replaced
+  by the pipeline table in the README, built from the GitLab API, with the
+  full logs in `docs/evidence/gitlab/`.
+- [x] Push to GitHub: done, as `abhichandra-v/gitlab-cicd-container-security`.

@@ -21,7 +21,7 @@ Every number on this page comes from a file in [`docs/evidence/`](docs/evidence/
 > GitLab 18.9 instance, and the vulnerable demo branch is blocked there; the
 > job logs are in [`docs/evidence/gitlab/`](docs/evidence/gitlab/). That
 > instance is private, so there is no public pipeline badge, and the three
-> screenshots below are still placeholders. Its runner is not privileged, so
+> runs are summarised below in place of screenshots. Its runner is not privileged, so
 > the Kubernetes deploy test (which needs Docker-in-Docker) has been run
 > locally and in a local dind rehearsal, not on GitLab. A staging deploy to a
 > real cluster has not been run.
@@ -234,16 +234,18 @@ nothing needs a privileged runner, so the same file runs on gitlab.com.
 
 Setup: [docs/SETUP-GITLAB.md](docs/SETUP-GITLAB.md).
 
-## Pipeline screenshots
+## Pipeline runs on GitLab
 
-Placeholders: the files do not exist yet. The same information is available
-as text, from the GitLab API, in [`docs/evidence/gitlab/`](docs/evidence/gitlab/).
+The GitLab instance is private, so instead of screenshots here are the runs,
+taken from the GitLab API. Full job lists and logs are in
+[`docs/evidence/gitlab/`](docs/evidence/gitlab/).
 
-| Screenshot | File |
-|---|---|
-| ⏳ **PLACEHOLDER**: green pipeline on `main` | `docs/evidence/screenshots/pipeline-green.png` |
-| ⏳ **PLACEHOLDER**: `demo/vulnerable-base` pipeline blocked at `trivy-image` | `docs/evidence/screenshots/pipeline-gate-blocked.png` |
-| ⏳ **PLACEHOLDER**: container registry tags | `docs/evidence/screenshots/registry.png` |
+| Pipeline | Ref | Result | What it shows |
+|---|---|---|---|
+| 556 | `main` | Failed at `build-image` | The runner is not privileged; Docker-in-Docker cannot start. Led to the Kaniko build (D-023) |
+| 558 | `main` | **Green**, 15 jobs | Lint, test, Kaniko build, 7 scan gates, SBOM, smoke-test; staging deploy skipped cleanly when pressed |
+| 559 | `demo/vulnerable-base` | **Blocked** at `trivy-image` | Every other job passes; 36 HIGH/CRITICAL findings stop the pipeline before `smoke-test` |
+| 563 | `v1.0.0` | **Green**, 17 jobs | Adds `release-image` (crane retag of the tested digest) and `release` (GitLab release created) |
 
 ## Evidence index
 
@@ -268,9 +270,10 @@ as text, from the GitLab API, in [`docs/evidence/gitlab/`](docs/evidence/gitlab/
 | Staging deploy: skip, validation, dry run, failed rollout | [`deploy-staging-paths.txt`](docs/evidence/deploy-staging-paths.txt) |
 | Rollback | [`rollback.txt`](docs/evidence/rollback.txt) |
 
-Not yet evidenced: the kind-based `deploy-test` job on a GitLab runner (it
-needs a privileged runner; this one is not), a staging deploy to a real
-cluster, and screenshots.
+Not evidenced on GitLab, by design of the infrastructure it ran on: the
+kind-based `deploy-test` job (it needs a privileged runner and the runner is
+not privileged), and a staging deploy (no cluster is connected). Both are
+evidenced locally instead, as listed above.
 
 ## Documentation
 
