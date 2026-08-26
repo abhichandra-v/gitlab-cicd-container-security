@@ -169,7 +169,7 @@ date**. Current list:
 | `.trivyignore.yaml` | DS-0002 (non-root `USER`) for `build/toolbox/Dockerfile` | Local dev toolbox, never shipped; root is needed for the host Docker socket | 2027-04-13 |
 | `.trivyignore.yaml` | DS-0026 (`HEALTHCHECK`) for `build/toolbox/Dockerfile` | One-shot commands, nothing long-running to check | 2027-04-13 |
 | `build/toolbox/Dockerfile` (inline) | CKV_DOCKER_3, CKV_DOCKER_2 | Same two findings, Checkov's IDs | 2027-04-13 |
-| `.trivyignore.yaml` | KSV-0125 (untrusted registry) for `rendered/prod.yaml` | `registry.gitlab.com/abhichandra-v/orders-api-pipeline` is the registry this pipeline pushes to; the trusted list built into Trivy does not include GitLab | 2027-04-13 |
+| `.trivyignore.yaml` | KSV-0125 (untrusted registry) for `rendered/prod.yaml` | `registry.gitlab.com/abhichandra-v/gitlab-cicd-container-security` is the registry this pipeline pushes to; the trusted list built into Trivy does not include GitLab | 2027-04-13 |
 | `k8s/base/deployment.yaml` (annotation) | CKV_K8S_43 (image by digest) | The digest is applied by the pipeline at deploy time; the manifest carries a tag | 2027-04-13 |
 | `k8s/overlays/dev` (annotation) | CKV_K8S_15 (pull policy `Always`) | Dev only: the image is loaded into kind, there is no registry to pull from | 2027-04-13 |
 | `k8s/overlays/dev` (annotation) | kube-score `container-image-pull-policy`, `deployment-replicas` | Dev only: same local image, and one replica is enough for a throwaway cluster | 2027-04-13 |

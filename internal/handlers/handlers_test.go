@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/abhichandra-v/orders-api-pipeline/internal/store"
+	"github.com/abhichandra-v/gitlab-cicd-container-security/internal/store"
 )
 
 func newTestHandler(t *testing.T, s OrderStore) (http.Handler, *atomic.Bool, *bytes.Buffer) {

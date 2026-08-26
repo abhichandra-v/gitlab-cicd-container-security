@@ -48,7 +48,7 @@ namespace: $NAMESPACE
 resources:
   - ../prod
 images:
-  - name: registry.gitlab.com/abhichandra-v/orders-api-pipeline
+  - name: registry.gitlab.com/abhichandra-v/gitlab-cicd-container-security
     newName: ${IMAGE_REF%@*}
     digest: ${IMAGE_REF#*@}
 EOF

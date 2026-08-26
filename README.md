@@ -1,4 +1,4 @@
-# orders-api-pipeline
+# gitlab-cicd-container-security
 
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -221,7 +221,7 @@ Output of the full run (the header records the commit; only docs changed after i
 
 ## GitHub and GitLab
 
-GitHub (`github.com/abhichandra-v/orders-api-pipeline`) is the canonical,
+GitHub (`github.com/abhichandra-v/gitlab-cicd-container-security`) is the canonical,
 public home of the code. GitLab runs the pipeline from the same commits: the
 repository has two remotes, `origin` (GitHub) and `gitlab`, and both are
 pushed. There is no mirroring and no GitHub Actions workflow; nothing runs

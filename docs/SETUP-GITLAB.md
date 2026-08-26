@@ -17,14 +17,14 @@ pipeline itself needs no changes, because registry paths come from
 ## 1. Create the GitLab project
 
 1. On gitlab.com: **New project → Create blank project**.
-2. Project name `orders-api-pipeline`, visibility **Public**.
+2. Project name `gitlab-cicd-container-security`, visibility **Public**.
 3. **Untick** "Initialize repository with a README" (the history comes from
    this repo).
 
 Or with the CLI (`glab auth login` first):
 
 ```bash
-glab repo create abhichandra-v/orders-api-pipeline --public --defaultBranch main
+glab repo create abhichandra-v/gitlab-cicd-container-security --public --defaultBranch main
 ```
 
 ## 2. Check the project settings
@@ -54,11 +54,11 @@ glab repo create abhichandra-v/orders-api-pipeline --public --defaultBranch main
 ## 3. Add the remotes and push
 
 ```bash
-git remote add origin git@github.com:abhichandra-v/orders-api-pipeline.git
+git remote add origin git@github.com:abhichandra-v/gitlab-cicd-container-security.git
 ```
 
 ```bash
-git remote add gitlab git@gitlab.com:abhichandra-v/orders-api-pipeline.git
+git remote add gitlab git@gitlab.com:abhichandra-v/gitlab-cicd-container-security.git
 ```
 
 ```bash
@@ -96,13 +96,13 @@ pipeline was written (it needs the project to exist), so it is the first real
 check:
 
 ```bash
-glab ci lint --repo abhichandra-v/orders-api-pipeline
+glab ci lint --repo abhichandra-v/gitlab-cicd-container-security
 ```
 
 Then watch the run:
 
 ```bash
-glab ci status --repo abhichandra-v/orders-api-pipeline
+glab ci status --repo abhichandra-v/gitlab-cicd-container-security
 ```
 
 or **Build → Pipelines** in the UI. Expected on `main`:
@@ -143,7 +143,7 @@ prints a notice and exits 0.
 After the first pipeline, the badge URL in the README resolves:
 
 ```
-https://gitlab.com/abhichandra-v/orders-api-pipeline/badges/main/pipeline.svg
+https://gitlab.com/abhichandra-v/gitlab-cicd-container-security/badges/main/pipeline.svg
 ```
 
 ## 7. Evidence to capture

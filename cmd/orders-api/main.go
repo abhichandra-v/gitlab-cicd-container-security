@@ -16,9 +16,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/abhichandra-v/orders-api-pipeline/internal/config"
-	"github.com/abhichandra-v/orders-api-pipeline/internal/handlers"
-	"github.com/abhichandra-v/orders-api-pipeline/internal/store"
+	"github.com/abhichandra-v/gitlab-cicd-container-security/internal/config"
+	"github.com/abhichandra-v/gitlab-cicd-container-security/internal/handlers"
+	"github.com/abhichandra-v/gitlab-cicd-container-security/internal/store"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
