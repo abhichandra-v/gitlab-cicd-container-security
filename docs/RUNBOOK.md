@@ -37,7 +37,7 @@ There are three ways the image reaches a cluster.
 To see exactly what it would apply, without a cluster:
 
 ```bash
-DRY_RUN=1 IMAGE_REF=registry.gitlab.com/abhichandra-v/orders-api-pipeline@sha256:<digest> bash scripts/deploy-staging.sh
+DRY_RUN=1 IMAGE_REF=registry.gitlab.com/abhichandra-v/gitlab-cicd-container-security@sha256:<digest> bash scripts/deploy-staging.sh
 ```
 
 [`evidence/deploy-staging-paths.txt`](evidence/deploy-staging-paths.txt) shows

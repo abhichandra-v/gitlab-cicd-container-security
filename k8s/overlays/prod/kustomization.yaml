@@ -15,5 +15,5 @@ replicas:
 
 images:
   - name: orders-api
-    newName: registry.gitlab.com/abhichandra-v/orders-api-pipeline
+    newName: registry.gitlab.com/abhichandra-v/gitlab-cicd-container-security
     newTag: v1.0.0

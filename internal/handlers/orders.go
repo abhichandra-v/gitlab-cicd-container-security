@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/abhichandra-v/orders-api-pipeline/internal/store"
+	"github.com/abhichandra-v/gitlab-cicd-container-security/internal/store"
 )
 
 const (

@@ -21,7 +21,7 @@ misconfigurations:
     paths:
       - rendered/prod.yaml
     statement: >-
-      registry.gitlab.com/abhichandra-v/orders-api-pipeline is this project's
+      registry.gitlab.com/abhichandra-v/gitlab-cicd-container-security is this project's
       own registry, the one the pipeline pushes to. Trivy's built-in list of
       trusted registries does not include GitLab.
     expired_at: 2027-04-13
