@@ -148,8 +148,9 @@ https://gitlab.com/abhichandra-v/gitlab-cicd-container-security/badges/main/pipe
 
 ## 7. Evidence to capture
 
-Save these under `docs/evidence/screenshots/` (names are referenced from the
-README):
+Optional if the GitLab instance is public. The README currently summarises
+the runs as a table from the GitLab API instead. Screenshots, if added, go
+under `docs/evidence/screenshots/`:
 
 | File | What |
 |---|---|
