@@ -62,6 +62,12 @@ variables:
   # which needs docker-in-docker. Everything else runs unprivileged.
   PRIVILEGED_RUNNER: "false"
 
+  # GitLab agent for Kubernetes registered in this project. When it exists,
+  # GitLab gives every job a kubeconfig context named
+  # "<project path>:<agent name>", and the Kubernetes jobs use it. When it
+  # does not, those jobs print a notice and exit 0.
+  KUBE_AGENT: "ai-k8s-agent"
+
   IMAGE_SHA: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   IMAGE_BRANCH: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
 
@@ -432,6 +438,45 @@ deploy-test:
     paths:
       - diagnostics/
 
+# Deploys the image to a real cluster through the GitLab agent, into a
+# namespace that exists only for this pipeline, smoke-tests it through the
+# Service, and deletes the namespace. Same manifests and script as
+# deploy-staging. Needs no privileged runner.
+deploy-test-k8s:
+  stage: deploy-test
+  image: $ALPINE_IMAGE
+  needs: *all-gates
+  variables:
+    KUBE_CONTEXT: "$CI_PROJECT_PATH:$KUBE_AGENT"
+    NAMESPACE: "orders-ci-$CI_PIPELINE_IID"
+    # The job token lets the cluster pull the image while this job runs; the
+    # namespace is deleted before the token expires.
+    REGISTRY_PULL_USER: gitlab-ci-token
+    REGISTRY_PULL_PASSWORD: $CI_JOB_TOKEN
+  script:
+    - apk add --no-cache bash curl
+    - >
+      sh scripts/fetch-verified.sh
+      "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+      "$KUBECTL_SHA256" /usr/local/bin/kubectl
+    - chmod +x /usr/local/bin/kubectl
+    - |
+      if ! kubectl config get-contexts "$KUBE_CONTEXT" >/dev/null 2>&1; then
+        echo "No GitLab agent context $KUBE_CONTEXT for this project; skipping."
+        exit 0
+      fi
+    - bash scripts/deploy-staging.sh
+    - bash scripts/smoke-k8s.sh "$NAMESPACE"
+  after_script:
+    - |
+      if command -v kubectl >/dev/null && kubectl config use-context "$KUBE_CONTEXT" >/dev/null 2>&1; then
+        if [ "$CI_JOB_STATUS" != "success" ]; then
+          kubectl -n "$NAMESPACE" get pods -o wide || true
+          kubectl -n "$NAMESPACE" get events --sort-by=.lastTimestamp | tail -n 30 || true
+        fi
+        kubectl delete namespace "$NAMESPACE" --wait=false --ignore-not-found
+      fi
+
 # -------------------------------------------------------------- deploy ----
 
 # Manual deploy of the tested digest to a real cluster. Needs the masked,
@@ -450,6 +495,8 @@ deploy-staging:
     - job: deploy-test
       artifacts: false
       optional: true
+    - job: deploy-test-k8s
+      artifacts: false
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual
@@ -463,6 +510,8 @@ deploy-staging:
   # One staging deploy at a time, and never cancelled halfway.
   resource_group: staging
   interruptible: false
+  variables:
+    KUBE_CONTEXT: "$CI_PROJECT_PATH:$KUBE_AGENT"
   script:
     - apk add --no-cache bash curl
     - >
