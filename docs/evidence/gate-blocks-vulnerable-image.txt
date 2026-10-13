@@ -9,10 +9,12 @@
 # log of the failing job on this branch is to be added next to this file as
 # gate-blocks-vulnerable-image-gitlab.txt (see docs/SETUP-GITLAB.md, step 7).
 #
-# Vulnerable image: branch demo/vulnerable-base, commit 666dfa4 (never merged).
+# Vulnerable image: branch demo/vulnerable-base, commit 8fcca94 (never merged).
 # Its only change is the runtime base:
 #   FROM alpine:3.12.0@sha256:185518070891758909c9f839cf4ca393ee977ac378609f700f60a771a2dfe321
-# Tool: Version: 0.75.0
+# On that branch hadolint, trivy config and Checkov all still pass; the image
+# scan is the only gate that catches it.
+# Tool: Trivy 0.75.0
 # Rule: fail on HIGH or CRITICAL vulnerabilities that have a fix available.
 
 ================================================================================
@@ -23,9 +25,9 @@ $ docker build --build-arg VERSION=demo -t orders-api:vulnerable-demo .
 $ sh scripts/scan-image.sh orders-api:vulnerable-demo
 
 scanning orders-api:vulnerable-demo
-2026-10-13T10:02:29Z	WARN	This OS version is no longer supported by the distribution	family="alpine" version="3.12.0"
-2026-10-13T10:02:29Z	WARN	The vulnerability detection may be insufficient because security updates are not provided
-2026-10-13T10:02:29Z	WARN	[report] No enabled scanners found. Summary table will not be displayed.
+2026-10-13T10:39:24Z	WARN	This OS version is no longer supported by the distribution	family="alpine" version="3.12.0"
+2026-10-13T10:39:24Z	WARN	The vulnerability detection may be insufficient because security updates are not provided
+2026-10-13T10:39:26Z	WARN	[report] No enabled scanners found. Summary table will not be displayed.
 
 orders-api:vulnerable-demo (alpine 3.12.0)
 ==========================================
@@ -179,14 +181,14 @@ See docs/RUNBOOK.md, 'Triaging a failed scan'.
 exit code: 1
 
 ================================================================================
-2. Hardened image from this commit (expected: GATE PASSED, exit code 0)
+2. Hardened image (expected: GATE PASSED, exit code 0)
 ================================================================================
-$ git switch feat/security-scanning
+$ git switch main
 $ make image
 $ sh scripts/scan-image.sh orders-api:local
 
 scanning orders-api:local
-2026-10-13T10:02:48Z	WARN	[report] No enabled scanners found. Summary table will not be displayed.
+2026-10-13T10:42:57Z	WARN	[report] No enabled scanners found. Summary table will not be displayed.
 GATE PASSED: no fixable HIGH or CRITICAL vulnerabilities in orders-api:local.
 
 exit code: 0
