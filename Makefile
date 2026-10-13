@@ -3,6 +3,7 @@ SHELL := bash
 .DEFAULT_GOAL := help
 
 IMAGE   ?= orders-api:local
+KUBERNETES_VERSION ?= 1.37.0
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 # Standalone kustomize if present, otherwise the copy embedded in kubectl.
@@ -57,8 +58,21 @@ size-report: ## Build hardened, distroless and naive images; write docs/evidence
 image-evidence: image ## Record image history, config and contents; run it locked down
 	bash scripts/image-evidence.sh $(IMAGE)
 
+.PHONY: render
+render: ## Render both kustomize overlays into rendered/
+	mkdir -p rendered
+	$(KUSTOMIZE) build k8s/overlays/dev > rendered/dev.yaml
+	$(KUSTOMIZE) build k8s/overlays/prod > rendered/prod.yaml
+
+.PHONY: validate
+validate: render ## kubeconform (strict), kube-score and Checkov on the rendered overlays
+	kubeconform -strict -summary -kubernetes-version $(KUBERNETES_VERSION) rendered/dev.yaml rendered/prod.yaml
+	kube-score score --kubernetes-version v$(basename $(KUBERNETES_VERSION)) --exit-one-on-warning rendered/dev.yaml
+	kube-score score --kubernetes-version v$(basename $(KUBERNETES_VERSION)) --exit-one-on-warning rendered/prod.yaml
+	checkov --framework kubernetes --compact --quiet -f rendered/dev.yaml -f rendered/prod.yaml
+
 .PHONY: scan
-scan: image ## Run every scan gate the pipeline runs; any finding fails
+scan: image render ## Run every scan gate the pipeline runs; any finding fails
 	trivy fs --scanners vuln,secret,misconfig --exit-code 1 --no-progress .
 	trivy config --exit-code 1 .
 	sh scripts/scan-image.sh $(IMAGE) reports
@@ -72,7 +86,7 @@ sbom: image ## Write a CycloneDX SBOM of the image to reports/sbom.cdx.json
 
 .PHONY: clean
 clean: ## Remove build output
-	rm -rf bin coverage.out junit.xml reports
+	rm -rf bin coverage.out junit.xml reports rendered
 
 # Targets added in later phases (see docs/PLAN.md):
-# validate, kind-up, deploy, smoke
+# kind-up, deploy, smoke
