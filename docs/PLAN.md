@@ -13,13 +13,13 @@ GitLab account.
 
 ## Phase 1: `feat/orders-api`
 
-- [ ] Order model and in-memory store behind a mutex
-- [ ] Handlers: `POST /orders`, `GET /orders`, `GET /orders/{id}`
-- [ ] `GET /healthz`, `GET /readyz`
-- [ ] Config from env vars, `log/slog` JSON logs, graceful shutdown on SIGTERM
-- [ ] Table-driven tests, 80%+ coverage on handlers and store, `go vet` clean
-- [ ] `make test` green
-- [ ] Every endpoint exercised with curl, transcript in `docs/evidence/api-smoke.txt`
+- [x] Order model and in-memory store behind a mutex
+- [x] Handlers: `POST /orders`, `GET /orders`, `GET /orders/{id}`
+- [x] `GET /healthz`, `GET /readyz`
+- [x] Config from env vars, `log/slog` JSON logs, graceful shutdown on SIGTERM
+- [x] Table-driven tests, 80%+ coverage on handlers and store, `go vet` clean
+- [x] `make test` green
+- [x] Every endpoint exercised with curl, transcript in `docs/evidence/api-smoke.txt`
 
 ## Phase 2: `feat/container-image` → tag `v0.1.0`
 
