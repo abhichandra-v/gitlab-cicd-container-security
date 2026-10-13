@@ -9,7 +9,7 @@ GitLab account.
 - [x] `.gitignore`, `.editorconfig`, MIT `LICENSE`
 - [x] README skeleton (title, purpose, status)
 - [x] `docs/PLAN.md`, `docs/DECISIONS.md`
-- [ ] Makefile skeleton with a `doctor` target (go, docker, kind, kubectl, kustomize, trivy, hadolint)
+- [x] Makefile skeleton with a `doctor` target (go, docker, kind, kubectl, kustomize, trivy, hadolint)
 
 ## Phase 1: `feat/orders-api`
 
