@@ -73,3 +73,20 @@ default:
         sleep 2
       done
       docker info --format 'docker daemon {{.ServerVersion}} ready'
+
+# ---------------------------------------------------------------- lint ----
+
+go-lint:
+  stage: lint
+  image: $GOLANGCI_IMAGE
+  extends: .go-cache
+  needs: []
+  script:
+    - golangci-lint run --timeout 5m ./...
+
+hadolint:
+  stage: lint
+  image: $HADOLINT_IMAGE
+  needs: []
+  script:
+    - hadolint Dockerfile build/naive/Dockerfile build/distroless/Dockerfile build/toolbox/Dockerfile
