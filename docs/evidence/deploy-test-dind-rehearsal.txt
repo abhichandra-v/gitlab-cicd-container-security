@@ -1,0 +1,96 @@
+# Rehearsal of the deploy-test pipeline job: scripts/sim-deploy-test.sh
+# run locally on 2026-10-13, commit 4fe72a3
+#
+# A real docker:dind service (TLS, alias "docker") and a docker:cli job
+# container run the same commands as the deploy-test job in .gitlab-ci.yml.
+# This is NOT a GitLab job log. It shows that kind-inside-dind works with
+# this repo (API server reached at https://docker:6443). Differences from the
+# real job: the image is built in the dind daemon instead of pulled by
+# digest, and no GitLab runner, cache or artifact handling is involved.
+
+=== service: docker:29.9.0-dind@sha256:0b6d18a4a222e71c88be6034926b4f6cde2fc33c2218643d03ccfddc65995470 (alias docker, TLS on 2376)
+=== job container: docker:29.9.0-cli@sha256:1a4c7cb63513f349bdad01fcc6e0f3f2f67d37b9da86f14dc0d4a0942eecda00
+waiting for the docker daemon (1/30)
+waiting for the docker daemon (2/30)
+docker daemon 29.9.0 ready, storage driver overlayfs
+$ apk add --no-cache --quiet bash curl
+$ sh scripts/fetch-verified.sh https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64 aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d /usr/local/bin/kind
+$ sh scripts/fetch-verified.sh https://dl.k8s.io/release/v1.37.1/bin/linux/amd64/kubectl 65691ff77eb6fa44c908b77a1082c9f092c3b9733b5cefabec0d1104890e21a8 /usr/local/bin/kubectl
+$ chmod +x /usr/local/bin/kind /usr/local/bin/kubectl
+$ docker build -t orders-api:sim .    (stands in for: docker pull $IMAGE_REF)
+$ bash scripts/kind-up.sh
+Creating cluster "orders-api" ...
+ • Ensuring node image (kindest/node:v1.37.0) 🖼️  ...
+ ✓ Ensuring node image (kindest/node:v1.37.0) 🖼️
+ • Preparing nodes 📦   ...
+ ✓ Preparing nodes 📦 
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+ • Waiting ≤ 3m0s for control-plane = Ready ⏳  ...
+ ✓ Waiting ≤ 3m0s for control-plane = Ready ⏳
+ • Ready after 17s 💚
+Set kubectl context to "kind-orders-api"
+You can now use your cluster with:
+kubectl cluster-info --context kind-orders-api
+Have a nice day! 👋
+Set kubectl context to "kind-orders-api"
+Kubernetes control plane is running at https://docker:6443
+CoreDNS is running at https://docker:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+NAME                       STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                             CONTAINER-RUNTIME
+orders-api-control-plane   Ready    control-plane   32s   v1.37.0   172.18.0.2    <none>        Debian GNU/Linux 13 (trixie)   6.6.87.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+$ bash scripts/deploy.sh orders-api:sim
+--- loading orders-api:local into kind cluster 'orders-api'
+loaded orders-api:local (linux/amd64) into kind cluster 'orders-api'
+--- applying k8s/overlays/dev
+namespace/orders-dev created
+serviceaccount/orders-api created
+service/orders-api created
+deployment.apps/orders-api created
+poddisruptionbudget.policy/orders-api created
+networkpolicy.networking.k8s.io/default-deny-all created
+networkpolicy.networking.k8s.io/orders-api-allow-http created
+--- waiting for the rollout (timeout 180s)
+Waiting for deployment "orders-api" rollout to finish: 0 of 1 updated replicas are available...
+Waiting for deployment "orders-api" rollout to finish: 0 of 1 updated replicas are available...
+deployment "orders-api" successfully rolled out
+--- deployed
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES             SELECTOR
+deployment.apps/orders-api   1/1     1            1           7s    orders-api   orders-api:local   app.kubernetes.io/name=orders-api
+NAME                              READY   STATUS    RESTARTS   AGE   IP           NODE                       NOMINATED NODE   READINESS GATES
+pod/orders-api-5dcf9ffb6b-npgt7   1/1     Running   0          7s    10.244.0.5   orders-api-control-plane   <none>           <none>
+NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/orders-api   ClusterIP   10.96.214.79   <none>        80/TCP    7s    app.kubernetes.io/name=orders-api
+NAME                                                    POD-SELECTOR                        AGE
+networkpolicy.networking.k8s.io/default-deny-all        <none>                              7s
+networkpolicy.networking.k8s.io/orders-api-allow-http   app.kubernetes.io/name=orders-api   7s
+NAME                                    MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+poddisruptionbudget.policy/orders-api   N/A             1                 1                     7s
+$ bash scripts/smoke-k8s.sh orders-dev
+smoke test against http://127.0.0.1:18080
+ok    GET /healthz                       200
+ok    GET /readyz                        200
+ok    POST /orders                       201
+ok    GET /orders/{id}                   200
+ok    GET /orders                        200
+ok    GET /orders/{unknown} is 404       404
+ok    POST /orders invalid is 422        422
+smoke test passed (order e70bbacef66b862a)
+$ bash scripts/netpol-check.sh orders-dev
+docker.io/library/alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+1. from namespace "default" to http://10.96.214.79/healthz (expected: allowed)
+{"status":"ok"}
+   ALLOWED, as expected
+2. from inside namespace "orders-dev" to http://10.96.214.79/healthz (expected: blocked by default-deny egress)
+wget: download timed out
+   BLOCKED, as expected
+$ kind delete cluster --name orders-api
+Deleting cluster "orders-api" ...
+Deleted nodes: ["orders-api-control-plane"]
+job exit code: 0
