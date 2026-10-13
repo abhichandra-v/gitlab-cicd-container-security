@@ -16,6 +16,7 @@ same commits.
 - [docs/PLAN.md](docs/PLAN.md): build plan and progress
 - [docs/DECISIONS.md](docs/DECISIONS.md): decision log
 - [docs/SETUP-GITLAB.md](docs/SETUP-GITLAB.md): creating the GitLab project and running the pipeline
+- [docs/RUNBOOK.md](docs/RUNBOOK.md): deploying, rolling back, triaging scans, rotating variables, updating pins
 - [docs/SECURITY.md](docs/SECURITY.md): what each control does and does not cover
 - [docs/evidence/](docs/evidence/): raw command output behind every number
 

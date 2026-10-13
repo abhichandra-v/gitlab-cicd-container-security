@@ -173,3 +173,49 @@ One short entry per decision: context, decision, why. Newest last.
   overlay stay strict, and prod is scored with `--exit-one-on-warning`.
 - **Why:** The exceptions are visible in the overlay that needs them and
   cannot leak into prod.
+
+## D-018: kind-in-dind is kept for `deploy-test`, after a local rehearsal
+
+- **Context:** The brief allows falling back to a render-and-validate job if
+  an ephemeral kind cluster inside docker-in-docker proves infeasible on
+  shared runners. The known problem is that the kind API server is published
+  on the dind host, not on the job container's localhost.
+- **Decision:** Keep the real deploy test. `scripts/kind-up.sh` takes
+  `KIND_API_HOST=docker`: the API server binds to all interfaces, its
+  certificate includes that name, and the kubeconfig points at
+  `https://docker:6443`.
+- **Why:** `scripts/sim-deploy-test.sh` runs the job's commands against a real
+  `docker:dind` service with TLS, using the pipeline's pinned images, and it
+  passes (`docs/evidence/deploy-test-dind-rehearsal.txt`). That is not a
+  GitLab runner. If the job fails there for resource reasons, the fallback is
+  to drop the cluster steps and keep `render-manifests`, `kubeconform` and
+  `kube-score`, which already validate the same manifests.
+
+## D-019: `deploy-test` waits for every scan gate
+
+- **Context:** With `needs:`, a job starts as soon as the jobs it lists
+  finish, regardless of stage order.
+- **Decision:** `deploy-test` lists all seven gating scan jobs in `needs:`,
+  not only `build-image`.
+- **Why:** Nothing is deployed, even to a throwaway cluster, before the image
+  and manifests have passed every gate.
+
+## D-020: Releases retag the tested digest in the registry
+
+- **Context:** A release image could be rebuilt from the tag, or the image
+  already built in the tag pipeline could be given the version tag.
+- **Decision:** `release-image` runs `docker buildx imagetools create`, which
+  adds the tag to the existing manifest in the registry.
+- **Why:** The released image is byte-for-byte the one that was scanned and
+  deploy-tested. A rebuild could differ (new base layer, new Go patch).
+
+## D-021: `deploy-staging` exits 0 when no cluster is configured
+
+- **Context:** The brief asks for the job to skip cleanly without
+  `KUBECONFIG_B64`. A `rules:` condition on the variable would hide the job
+  entirely.
+- **Decision:** The job always exists as a manual action; the script prints a
+  notice and exits 0 when the variable is absent.
+- **Why:** The deploy step stays visible in the pipeline graph. The cost is
+  that GitLab records a "deployment" to the `staging` environment even though
+  nothing was deployed; the job log states that plainly.
