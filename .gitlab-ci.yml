@@ -432,3 +432,52 @@ deploy-staging:
       "$KUBECTL_SHA256" /usr/local/bin/kubectl
     - chmod +x /usr/local/bin/kubectl
     - bash scripts/deploy-staging.sh
+
+# ------------------------------------------------------------- release ----
+# Tag pipelines only (vMAJOR.MINOR.PATCH). The image is not rebuilt: the
+# digest that passed the gates in this pipeline gets the version tag.
+
+release-image:
+  stage: release
+  extends: .dind
+  needs:
+    - job: build-image
+      artifacts: true
+    - job: deploy-test
+      artifacts: false
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  interruptible: false
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    # Registry-side retag: no pull, no rebuild, the digest cannot change.
+    - docker buildx imagetools create --tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" "$IMAGE_REF"
+    - docker buildx imagetools inspect "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+    - echo "RELEASE_IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > release.env
+    - echo "RELEASE_IMAGE_REF=$IMAGE_REF" >> release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+
+release:
+  stage: release
+  image: $GLAB_IMAGE
+  needs:
+    - job: release-image
+      artifacts: true
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  variables:
+    # Full history, so the notes can list commits since the previous tag.
+    GIT_DEPTH: "0"
+  script:
+    - sh scripts/release-notes.sh "$CI_COMMIT_TAG" "$CI_REGISTRY_IMAGE" "$RELEASE_IMAGE_REF" > release-notes.md
+    - cat release-notes.md
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "orders-api $CI_COMMIT_TAG"
+    description: release-notes.md
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - release-notes.md
