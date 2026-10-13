@@ -1,0 +1,9 @@
+# Allowlist: the build context is only what the Go build needs. Everything
+# else (git history, docs, manifests, local env files) never reaches the
+# Docker daemon, so it cannot leak into a layer.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+**/*_test.go
