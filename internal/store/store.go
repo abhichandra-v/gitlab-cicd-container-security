@@ -30,16 +30,16 @@ type Order struct {
 type Store struct {
 	mu     sync.RWMutex
 	orders map[string]Order
-	max    int
+	cap    int
 	now    func() time.Time
 	newID  func() (string, error)
 }
 
-// New returns a Store that holds at most max orders.
-func New(max int) *Store {
+// New returns a Store that holds at most capacity orders.
+func New(capacity int) *Store {
 	return &Store{
 		orders: make(map[string]Order),
-		max:    max,
+		cap:    capacity,
 		now:    func() time.Time { return time.Now().UTC() },
 		newID:  randomID,
 	}
@@ -63,7 +63,7 @@ func (s *Store) Create(customer, item string, quantity int) (Order, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if len(s.orders) >= s.max {
+	if len(s.orders) >= s.cap {
 		return Order{}, ErrFull
 	}
 	o := Order{ID: id, Customer: customer, Item: item, Quantity: quantity, CreatedAt: s.now()}

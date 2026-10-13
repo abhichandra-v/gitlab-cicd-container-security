@@ -90,3 +90,24 @@ One short entry per decision: context, decision, why. Newest last.
 - **Why:** Satisfies the check for real instead of suppressing it, at the
   cost of about 20 lines of Go and no extra files in the image. Kubernetes
   ignores `HEALTHCHECK` and uses the HTTP probes in the manifests.
+
+## D-010: Pipeline YAML is validated without `glab ci lint`
+
+- **Context:** `glab ci lint` calls the GitLab API and needs a logged-in
+  gitlab.com account and an existing project. Neither was available while the
+  pipeline was written.
+- **Decision:** Validate with `yamllint -s` and Checkov's `gitlab_ci`
+  framework, and run each job's script locally in the same pinned image the
+  job uses. `glab ci lint` is listed in `docs/SETUP-GITLAB.md` as the first
+  thing to run once the project exists.
+- **Why:** Catches syntax and script errors early. It does not prove GitLab
+  accepts the configuration; only a real pipeline run does.
+
+## D-011: `go-test` runs on the Debian Go image, the build on Alpine
+
+- **Context:** `go test -race` needs cgo and a C compiler, which the Alpine Go
+  image does not ship.
+- **Decision:** `go-test` uses `golang:1.27.2` (Debian); the Dockerfile build
+  stage stays on `golang:1.27.2-alpine3.24`. Same Go version in both.
+- **Why:** Race detection is worth more than a smaller CI image, and the
+  production binary is built without cgo either way.

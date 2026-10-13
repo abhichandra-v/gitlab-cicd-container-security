@@ -35,14 +35,16 @@ GitLab account.
 
 ## Phase 3: `ci/gitlab-pipeline-core`
 
-- [ ] `.gitlab-ci.yml` skeleton: `workflow:rules`, `rules:`, `needs:`, cached Go modules
-- [ ] `go-lint` (golangci-lint), `hadolint`
-- [ ] `go-test` (coverage regex, JUnit via gotestsum, coverage artifact)
-- [ ] `build-image` (dind + TLS, tags short SHA and branch slug, pushes, digest artifact)
-- [ ] YAML validated locally
-- [ ] `docs/SETUP-GITLAB.md`
+- [x] `.gitlab-ci.yml` skeleton: `workflow:rules`, `rules:`, `needs:`, cached Go modules
+- [x] `go-lint` (golangci-lint), `hadolint`
+- [x] `go-test` (coverage regex, JUnit via gotestsum, coverage artifact)
+- [x] `build-image` (dind + TLS, tags short SHA and branch slug, pushes, digest artifact)
+- [x] YAML validated locally (yamllint strict, Checkov `gitlab_ci`; `glab ci lint` needs a gitlab.com login)
+- [x] `docs/SETUP-GITLAB.md`
 
 🛑 **Checkpoint A:** owner creates the GitLab project, pushes, confirms the pipeline is green.
+
+- [ ] Pipeline confirmed green on GitLab (not yet run: needs the owner's account)
 
 ## Phase 4: `feat/security-scanning`
 
