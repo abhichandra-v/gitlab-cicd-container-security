@@ -1,0 +1,12 @@
+---
+# Shared by the pipeline jobs and `make scan`, so both scan the same way.
+scan:
+  skip-dirs:
+    # Deliberately bad comparison image; never built by the pipeline.
+    # Justification and review date: docs/SECURITY.md, "Suppressions".
+    - build/naive
+    # Tool caches created inside the project directory in CI.
+    - .trivycache
+    - .go
+    - .cache
+ignorefile: .trivyignore.yaml
