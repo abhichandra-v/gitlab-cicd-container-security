@@ -259,3 +259,19 @@ gitleaks:
     expire_in: 30 days
     paths:
       - gitleaks-report.json
+
+sbom:
+  extends: .trivy
+  needs:
+    - build-image
+  variables:
+    TRIVY_USERNAME: $CI_REGISTRY_USER
+    TRIVY_PASSWORD: $CI_REGISTRY_PASSWORD
+  script:
+    - trivy image --format cyclonedx --output sbom.cdx.json "$IMAGE_REF"
+  artifacts:
+    expire_in: 90 days
+    paths:
+      - sbom.cdx.json
+    reports:
+      cyclonedx: sbom.cdx.json
