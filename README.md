@@ -15,6 +15,8 @@ same commits.
 
 - [docs/PLAN.md](docs/PLAN.md): build plan and progress
 - [docs/DECISIONS.md](docs/DECISIONS.md): decision log
+- [docs/SECURITY.md](docs/SECURITY.md): what each control does and does not cover
+- [docs/evidence/](docs/evidence/): raw command output behind every number
 
 ## License
 
