@@ -57,18 +57,18 @@ GitLab account.
 - [x] Suppression policy: justification and review date on every skip
 - [x] Gate proven on `demo/vulnerable-base`, log in `docs/evidence/gate-blocks-vulnerable-image.txt` (branch not merged). Local run of the job's script; the GitLab job log is still to be captured
 - [x] Scan gates and suppression policy documented
-- [ ] TODO: `kube-score` and `kubeconform` jobs are added in Phase 5, once manifests exist
+- [x] `kube-score` and `kubeconform` jobs (added in Phase 5, once manifests existed)
 
 ## Phase 5: `feat/k8s-manifests` → tag `v0.5.0`
 
-- [ ] `k8s/base`: Deployment, Service, ServiceAccount, PodDisruptionBudget
-- [ ] Pod hardening: non-root, read-only root fs, no privilege escalation, drop ALL, seccomp `RuntimeDefault`, requests/limits, three probes
-- [ ] Default-deny NetworkPolicy plus allow rule
-- [ ] `k8s/overlays/dev`, `k8s/overlays/prod` (replicas, image tag via `images:`)
-- [ ] `kube-score` and `kubeconform` (strict) jobs, `make validate`
-- [ ] Both overlays pass kubeconform strict, kube-score and Checkov (documented skips only)
-- [ ] `make kind-up deploy smoke` works locally
-- [ ] Tag `v0.5.0`
+- [x] `k8s/base`: Deployment, Service, ServiceAccount, PodDisruptionBudget
+- [x] Pod hardening: non-root, read-only root fs, no privilege escalation, drop ALL, seccomp `RuntimeDefault`, requests/limits, three probes
+- [x] Default-deny NetworkPolicy plus allow rule
+- [x] `k8s/overlays/dev`, `k8s/overlays/prod` (replicas, image tag via `images:`)
+- [x] `kube-score` and `kubeconform` (strict) jobs, `make validate`
+- [x] Both overlays pass kubeconform strict, kube-score and Checkov (documented skips only)
+- [x] `make kind-up deploy smoke` works locally
+- [x] Tag `v0.5.0`
 
 ## Phase 6: `ci/deploy-automation`
 
