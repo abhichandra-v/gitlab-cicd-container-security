@@ -58,6 +58,54 @@ That is a 139.7 : 1 ratio, a 99.28% reduction. The hardened image is the
 as root, ships the toolchain). Neither is built, pushed or deployed by the
 pipeline, and the scanners are configured to skip `build/naive`.
 
+## Kubernetes manifests
+
+`k8s/base` plus two kustomize overlays. Everything below is in the base, so
+both environments get it.
+
+| Control | Setting | What it stops |
+|---|---|---|
+| Non-root | `runAsNonRoot: true`, `runAsUser`/`runAsGroup: 65532` | A container escape starting as root |
+| Read-only root filesystem | `readOnlyRootFilesystem: true` | Dropping a binary or script into the container |
+| No privilege escalation | `allowPrivilegeEscalation: false`, `privileged: false` | setuid binaries gaining privileges |
+| No capabilities | `capabilities.drop: [ALL]` | Raw sockets, mounting, changing ownership |
+| Syscall filter | `seccompProfile: RuntimeDefault` | Rarely used, dangerous syscalls |
+| No API token | `automountServiceAccountToken: false` on the ServiceAccount and the pod | A compromised pod calling the Kubernetes API |
+| Resource requests and limits | CPU, memory and ephemeral storage | One pod starving the node |
+| Three probes | startup `/healthz`, liveness `/healthz`, readiness `/readyz` | Traffic to a pod that is starting or shutting down |
+| Namespace policy | `pod-security.kubernetes.io/enforce: restricted` | A later manifest change that quietly weakens the pod: the API server rejects it |
+| Default-deny NetworkPolicy | All ingress and egress denied; one rule allows in-cluster TCP 8080 | Lateral movement in, data exfiltration out |
+| PodDisruptionBudget | `maxUnavailable: 1` | A node drain taking every replica at once |
+| Rolling update | `maxUnavailable: 0`, `maxSurge: 1`, `preStop` sleep | Dropped requests during a deploy |
+
+Evidence:
+
+- [`evidence/k8s-validate.txt`](evidence/k8s-validate.txt): both rendered
+  overlays pass kubeconform `-strict` (14 resources valid), kube-score with
+  `--exit-one-on-warning`, and Checkov (272 passed, 0 failed, 4 skipped).
+- [`evidence/kind-deploy-smoke.txt`](evidence/kind-deploy-smoke.txt): the pod
+  is admitted into a namespace that enforces the restricted standard, its
+  security context is read back from the API server, the smoke test passes,
+  and `scripts/netpol-check.sh` shows the policies being enforced (a client in
+  another namespace gets through; a pod inside the namespace cannot connect
+  out).
+
+What this does not do:
+
+- **NetworkPolicy needs a CNI that enforces it.** The CNI in kind does, as
+  the evidence shows. On a cluster whose CNI ignores policies, these objects
+  are accepted and do nothing. Run `make netpol-check` against the target.
+- **The allow rule admits any pod in any namespace** on port 8080. Tightening
+  it to the namespace of an ingress controller is a per-cluster decision.
+- **The manifests carry a tag, not a digest.** `deploy-staging` deploys the
+  digest the pipeline built; applying the prod overlay by hand deploys
+  whatever the tag points to. That is the documented Checkov skip
+  (CKV_K8S_43).
+- **Nothing here is admission control for other workloads.** It hardens this
+  one deployment and its namespace.
+- **In-memory data.** Orders are lost on restart and not shared between
+  replicas. That is a property of the demo app, not a security control.
+
 ## Scan gates
 
 Every job in the `scan` stage exits non-zero on a finding, and a failed job
@@ -71,6 +119,8 @@ the same commands locally with the same configuration files.
 | `trivy-image` | Trivy `image` | HIGH or CRITICAL with a fix available | OS-package and Go standard-library CVEs in the exact image digest that was pushed | CVEs with no fix yet (`--ignore-unfixed`); MEDIUM and LOW; flaws in this repo's own code |
 | `checkov` | Checkov (`dockerfile`, `kubernetes`, `gitlab_ci`) | Any failed check | Policy violations in Dockerfiles, manifests and the pipeline definition itself | Runtime behaviour; anything outside those three frameworks |
 | `gitleaks` | gitleaks `git`, full history | Any leak | Secrets in any commit, including ones removed later | Secrets that match no rule (custom token formats); secrets outside git |
+| `kubeconform` | kubeconform `-strict` on both rendered overlays | Any invalid resource | Typos, unknown fields, wrong types, against the Kubernetes 1.37 schemas | Whether the values are sensible or safe |
+| `kube-score` | kube-score `--exit-one-on-warning` on both rendered overlays | Any warning or critical | Missing probes, limits, PDB, NetworkPolicy, anti-affinity; weak security context | Cluster-side state; anything outside its fixed rule set |
 | `hadolint` (lint stage) | hadolint | Any warning | Dockerfile bad practice: unpinned bases, shell pitfalls | Security of the base image contents |
 | `sbom` | Trivy `image --format cyclonedx` | Never (it records, it does not gate) | Gives a component inventory for later CVE lookups | It is not a scan |
 
@@ -103,6 +153,10 @@ date**. Current list:
 | `.trivyignore.yaml` | DS-0002 (non-root `USER`) for `build/toolbox/Dockerfile` | Local dev toolbox, never shipped; root is needed for the host Docker socket | 2027-04-13 |
 | `.trivyignore.yaml` | DS-0026 (`HEALTHCHECK`) for `build/toolbox/Dockerfile` | One-shot commands, nothing long-running to check | 2027-04-13 |
 | `build/toolbox/Dockerfile` (inline) | CKV_DOCKER_3, CKV_DOCKER_2 | Same two findings, Checkov's IDs | 2027-04-13 |
+| `.trivyignore.yaml` | KSV-0125 (untrusted registry) for `rendered/prod.yaml` | `registry.gitlab.com/abhichandra-v/orders-api-pipeline` is the registry this pipeline pushes to; the trusted list built into Trivy does not include GitLab | 2027-04-13 |
+| `k8s/base/deployment.yaml` (annotation) | CKV_K8S_43 (image by digest) | The digest is applied by the pipeline at deploy time; the manifest carries a tag | 2027-04-13 |
+| `k8s/overlays/dev` (annotation) | CKV_K8S_15 (pull policy `Always`) | Dev only: the image is loaded into kind, there is no registry to pull from | 2027-04-13 |
+| `k8s/overlays/dev` (annotation) | kube-score `container-image-pull-policy`, `deployment-replicas` | Dev only: same local image, and one replica is enough for a throwaway cluster | 2027-04-13 |
 | `trivy.yaml`, `.checkov.yaml` (`skip-dirs` / `skip-path`) | The whole `build/naive/` directory | Deliberately bad comparison image; its findings are the point, and it is never built by the pipeline | 2027-04-13 |
 
 How the dates are enforced:

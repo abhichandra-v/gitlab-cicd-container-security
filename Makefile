@@ -3,6 +3,7 @@ SHELL := bash
 .DEFAULT_GOAL := help
 
 IMAGE   ?= orders-api:local
+KUBERNETES_VERSION ?= 1.37.0
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 # Standalone kustomize if present, otherwise the copy embedded in kubectl.
@@ -47,7 +48,7 @@ api-evidence: ## Run the binary, curl every endpoint, write docs/evidence/api-sm
 
 .PHONY: image
 image: ## Build the hardened image as $(IMAGE)
-	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE) .
+	docker build --provenance=false --build-arg VERSION=$(VERSION) -t $(IMAGE) .
 
 .PHONY: size-report
 size-report: ## Build hardened, distroless and naive images; write docs/evidence/image-size.txt
@@ -57,8 +58,21 @@ size-report: ## Build hardened, distroless and naive images; write docs/evidence
 image-evidence: image ## Record image history, config and contents; run it locked down
 	bash scripts/image-evidence.sh $(IMAGE)
 
+.PHONY: render
+render: ## Render both kustomize overlays into rendered/
+	mkdir -p rendered
+	$(KUSTOMIZE) build k8s/overlays/dev > rendered/dev.yaml
+	$(KUSTOMIZE) build k8s/overlays/prod > rendered/prod.yaml
+
+.PHONY: validate
+validate: render ## kubeconform (strict), kube-score and Checkov on the rendered overlays
+	kubeconform -strict -summary -kubernetes-version $(KUBERNETES_VERSION) rendered/dev.yaml rendered/prod.yaml
+	kube-score score --kubernetes-version v$(basename $(KUBERNETES_VERSION)) --exit-one-on-warning rendered/dev.yaml
+	kube-score score --kubernetes-version v$(basename $(KUBERNETES_VERSION)) --exit-one-on-warning rendered/prod.yaml
+	checkov --framework kubernetes --compact --quiet -f rendered/dev.yaml -f rendered/prod.yaml
+
 .PHONY: scan
-scan: image ## Run every scan gate the pipeline runs; any finding fails
+scan: image render ## Run every scan gate the pipeline runs; any finding fails
 	trivy fs --scanners vuln,secret,misconfig --exit-code 1 --no-progress .
 	trivy config --exit-code 1 .
 	sh scripts/scan-image.sh $(IMAGE) reports
@@ -70,9 +84,26 @@ sbom: image ## Write a CycloneDX SBOM of the image to reports/sbom.cdx.json
 	mkdir -p reports
 	trivy image --no-progress --format cyclonedx --output reports/sbom.cdx.json $(IMAGE)
 
+.PHONY: kind-up
+kind-up: ## Create the local kind cluster (pinned node image) and point kubectl at it
+	bash scripts/kind-up.sh
+
+.PHONY: kind-down
+kind-down: ## Delete the local kind cluster
+	kind delete cluster --name $${KIND_CLUSTER:-orders-api}
+
+.PHONY: deploy
+deploy: image ## Load the image into kind, apply the dev overlay, wait for the rollout
+	bash scripts/deploy.sh $(IMAGE)
+
+.PHONY: smoke
+smoke: ## Smoke-test the deployed service through a port-forward
+	bash scripts/smoke-k8s.sh orders-dev
+
+.PHONY: netpol-check
+netpol-check: ## Prove the NetworkPolicies are enforced in the kind cluster
+	bash scripts/netpol-check.sh orders-dev
+
 .PHONY: clean
 clean: ## Remove build output
-	rm -rf bin coverage.out junit.xml reports
-
-# Targets added in later phases (see docs/PLAN.md):
-# validate, kind-up, deploy, smoke
+	rm -rf bin coverage.out junit.xml reports rendered

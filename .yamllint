@@ -5,6 +5,7 @@ ignore: |
   .go/
   .cache/
   reports/
+  rendered/
 
 rules:
   line-length:

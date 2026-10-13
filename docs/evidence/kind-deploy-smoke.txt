@@ -1,0 +1,123 @@
+# Local deploy to kind: make kind-up deploy smoke
+# generated 2026-10-13T10:20:12Z, in the toolbox image (kubectl v1.37.1, server v1.37.0, kind v0.33.0 go1.27.2 linux/amd64)
+# node image kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
+
+================================================================================
+$ make kind-up deploy smoke
+================================================================================
+bash scripts/kind-up.sh
+kind cluster 'orders-api' already exists
+Set kubectl context to "kind-orders-api"
+Kubernetes control plane is running at https://orders-api-control-plane:6443
+CoreDNS is running at https://orders-api-control-plane:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+NAME                       STATUS   ROLES           AGE     VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                             CONTAINER-RUNTIME
+orders-api-control-plane   Ready    control-plane   3m25s   v1.37.0   172.18.0.6    <none>        Debian GNU/Linux 13 (trixie)   6.6.87.2-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+docker build --provenance=false --build-arg VERSION=v0.1.0-18-g550bd21-dirty -t orders-api:local .
+bash scripts/deploy.sh orders-api:local
+--- loading orders-api:local into kind cluster 'orders-api'
+loaded orders-api:local (linux/amd64) into kind cluster 'orders-api'
+--- applying k8s/overlays/dev
+namespace/orders-dev unchanged
+serviceaccount/orders-api unchanged
+service/orders-api unchanged
+deployment.apps/orders-api unchanged
+poddisruptionbudget.policy/orders-api configured
+networkpolicy.networking.k8s.io/default-deny-all unchanged
+networkpolicy.networking.k8s.io/orders-api-allow-http configured
+--- waiting for the rollout (timeout 180s)
+deployment "orders-api" successfully rolled out
+--- deployed
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE     CONTAINERS   IMAGES             SELECTOR
+deployment.apps/orders-api   1/1     1            1           2m10s   orders-api   orders-api:local   app.kubernetes.io/name=orders-api
+NAME                              READY   STATUS    RESTARTS   AGE    IP           NODE                       NOMINATED NODE   READINESS GATES
+pod/orders-api-5dcf9ffb6b-krdfc   1/1     Running   0          2m9s   10.244.0.5   orders-api-control-plane   <none>           <none>
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+service/orders-api   ClusterIP   10.96.227.154   <none>        80/TCP    2m10s   app.kubernetes.io/name=orders-api
+NAME                                                    POD-SELECTOR                        AGE
+networkpolicy.networking.k8s.io/default-deny-all        <none>                              2m9s
+networkpolicy.networking.k8s.io/orders-api-allow-http   app.kubernetes.io/name=orders-api   2m9s
+NAME                                    MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+poddisruptionbudget.policy/orders-api   N/A             1                 1                     2m9s
+bash scripts/smoke-k8s.sh orders-dev
+smoke test against http://127.0.0.1:18080
+ok    GET /healthz                       200
+ok    GET /readyz                        200
+ok    POST /orders                       201
+ok    GET /orders/{id}                   200
+ok    GET /orders                        200
+ok    GET /orders/{unknown} is 404       404
+ok    POST /orders invalid is 422        422
+smoke test passed (order d3364e737f3067fc)
+rc=0
+
+================================================================================
+$ kubectl get ns orders-dev -o json | jq .metadata.labels
+  (the namespace enforces the "restricted" Pod Security Standard, and the pod
+   above was admitted into it)
+================================================================================
+{
+  "app.kubernetes.io/part-of": "orders",
+  "kubernetes.io/metadata.name": "orders-dev",
+  "pod-security.kubernetes.io/audit": "restricted",
+  "pod-security.kubernetes.io/enforce": "restricted",
+  "pod-security.kubernetes.io/warn": "restricted"
+}
+
+================================================================================
+Security settings of the running pod, read back from the API server
+================================================================================
+{
+  "pod": "orders-api-5dcf9ffb6b-krdfc",
+  "phase": "Running",
+  "restarts": 0,
+  "podSecurityContext": {
+    "runAsGroup": 65532,
+    "runAsNonRoot": true,
+    "runAsUser": 65532,
+    "seccompProfile": {
+      "type": "RuntimeDefault"
+    }
+  },
+  "containerSecurityContext": {
+    "allowPrivilegeEscalation": false,
+    "capabilities": {
+      "drop": [
+        "ALL"
+      ]
+    },
+    "privileged": false,
+    "readOnlyRootFilesystem": true,
+    "runAsGroup": 65532,
+    "runAsNonRoot": true,
+    "runAsUser": 65532,
+    "seccompProfile": {
+      "type": "RuntimeDefault"
+    }
+  },
+  "automountServiceAccountToken": false,
+  "resources": {
+    "limits": {
+      "cpu": "250m",
+      "ephemeral-storage": "64Mi",
+      "memory": "64Mi"
+    },
+    "requests": {
+      "cpu": "25m",
+      "ephemeral-storage": "16Mi",
+      "memory": "32Mi"
+    }
+  }
+}
+
+================================================================================
+$ bash scripts/netpol-check.sh
+  (are the NetworkPolicies enforced by the CNI, not just stored?)
+================================================================================
+1. from namespace "default" to http://10.96.227.154/healthz (expected: allowed)
+{"status":"ok"}
+   ALLOWED, as expected
+2. from inside namespace "orders-dev" to http://10.96.227.154/healthz (expected: blocked by default-deny egress)
+wget: download timed out
+   BLOCKED, as expected
+rc=0

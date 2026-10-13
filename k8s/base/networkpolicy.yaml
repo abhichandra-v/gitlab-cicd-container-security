@@ -1,0 +1,40 @@
+---
+# Default deny: every pod in the namespace starts with no ingress and no
+# egress. Anything allowed is an explicit rule below.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: orders
+  labels:
+    app.kubernetes.io/part-of: orders
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# The one allowed path: in-cluster clients to the API port. There is no
+# egress rule because the service calls nothing, not even DNS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: orders-api-allow-http
+  namespace: orders
+  labels:
+    app.kubernetes.io/name: orders-api
+    app.kubernetes.io/part-of: orders
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: orders-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8080
+  egress: []
