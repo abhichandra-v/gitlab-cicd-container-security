@@ -48,7 +48,7 @@ api-evidence: ## Run the binary, curl every endpoint, write docs/evidence/api-sm
 
 .PHONY: image
 image: ## Build the hardened image as $(IMAGE)
-	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE) .
+	docker build --provenance=false --build-arg VERSION=$(VERSION) -t $(IMAGE) .
 
 .PHONY: size-report
 size-report: ## Build hardened, distroless and naive images; write docs/evidence/image-size.txt
@@ -84,9 +84,26 @@ sbom: image ## Write a CycloneDX SBOM of the image to reports/sbom.cdx.json
 	mkdir -p reports
 	trivy image --no-progress --format cyclonedx --output reports/sbom.cdx.json $(IMAGE)
 
+.PHONY: kind-up
+kind-up: ## Create the local kind cluster (pinned node image) and point kubectl at it
+	bash scripts/kind-up.sh
+
+.PHONY: kind-down
+kind-down: ## Delete the local kind cluster
+	kind delete cluster --name $${KIND_CLUSTER:-orders-api}
+
+.PHONY: deploy
+deploy: image ## Load the image into kind, apply the dev overlay, wait for the rollout
+	bash scripts/deploy.sh $(IMAGE)
+
+.PHONY: smoke
+smoke: ## Smoke-test the deployed service through a port-forward
+	bash scripts/smoke-k8s.sh orders-dev
+
+.PHONY: netpol-check
+netpol-check: ## Prove the NetworkPolicies are enforced in the kind cluster
+	bash scripts/netpol-check.sh orders-dev
+
 .PHONY: clean
 clean: ## Remove build output
 	rm -rf bin coverage.out junit.xml reports rendered
-
-# Targets added in later phases (see docs/PLAN.md):
-# kind-up, deploy, smoke
