@@ -85,13 +85,13 @@ GitLab account.
 
 ## Phase 7: `docs/final-polish` → tag `v1.0.0`
 
-- [ ] `README.md`: purpose, Mermaid diagrams, size table from evidence, security-gate table, quick start, GitHub/GitLab pairing, badge, evidence links
-- [ ] `docs/PIPELINE.md`
-- [ ] `docs/SECURITY.md`
-- [ ] `docs/RUNBOOK.md`
-- [ ] Every README claim maps to a file in `docs/evidence/`
-- [ ] `make doctor test image scan` clean, `git status` clean, gitleaks clean on full history
-- [ ] Tag `v1.0.0`
+- [x] `README.md`: purpose, Mermaid diagrams, size table from evidence, security-gate table, quick start, GitHub/GitLab pairing, badge, evidence links
+- [x] `docs/PIPELINE.md`
+- [x] `docs/SECURITY.md`
+- [x] `docs/RUNBOOK.md`
+- [x] Every README claim maps to a file in `docs/evidence/`
+- [x] `make doctor test image scan` clean, `git status` clean, gitleaks clean on full history
+- [x] Tag `v1.0.0`
 
 ## Stretch (only after `v1.0.0`, only on request)
 
@@ -101,10 +101,19 @@ GitLab account.
 
 ## Definition of done
 
-- [ ] Pipeline green on GitLab: lint → test → build → scan → deploy-test (→ manual deploy, tag release)
-- [ ] Final image measured and recorded next to the naive image in `docs/evidence/image-size.txt`
-- [ ] A scan gate demonstrably blocks a vulnerable image (evidence file)
-- [ ] Manifests pass kubeconform strict, kube-score and Checkov
-- [ ] README, PIPELINE, SECURITY, RUNBOOK written from real outputs
-- [ ] History is feature-branch merges with Conventional Commits and no secrets
-- [ ] Tags `v0.1.0`, `v0.5.0`, `v1.0.0` exist locally
+- [ ] Pipeline green on GitLab: lint → test → build → scan → deploy-test (→ manual deploy, tag release). **Open: not yet run on GitLab; needs the owner account.** Every job has been run locally in its pinned image.
+- [x] Final image measured and recorded next to the naive image in `docs/evidence/image-size.txt` (7.30 MB vs 1020.32 MB)
+- [x] A scan gate demonstrably blocks a vulnerable image (evidence file; local run, GitLab job log still to capture)
+- [x] Manifests pass kubeconform strict, kube-score and Checkov
+- [x] README, PIPELINE, SECURITY, RUNBOOK written from real outputs
+- [x] History is feature-branch merges with Conventional Commits and no secrets
+- [x] Tags `v0.1.0`, `v0.5.0`, `v1.0.0` exist locally
+
+## Still open (all need the GitLab project)
+
+- [ ] `glab ci lint` against the real project
+- [ ] First green pipeline on `main`; badge resolves
+- [ ] `demo/vulnerable-base` pushed; failing `trivy-image` job log saved as `docs/evidence/gate-blocks-vulnerable-image-gitlab.txt`
+- [ ] Tag pipeline for `v1.0.0`: `release-image` and `release`
+- [ ] Three screenshots under `docs/evidence/screenshots/`; README placeholders replaced
+- [ ] `deploy-staging` against a real cluster with `KUBECONFIG_B64`
