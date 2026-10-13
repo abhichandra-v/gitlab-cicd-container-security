@@ -116,3 +116,40 @@ go-test:
       - coverage.html
     reports:
       junit: junit.xml
+
+# --------------------------------------------------------------- build ----
+
+build-image:
+  stage: build
+  extends: .dind
+  needs:
+    - go-lint
+    - hadolint
+    - go-test
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - >
+      docker build --pull
+      --build-arg "VERSION=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
+      --label "org.opencontainers.image.source=$CI_PROJECT_URL"
+      --label "org.opencontainers.image.revision=$CI_COMMIT_SHA"
+      --label "org.opencontainers.image.created=$CI_PIPELINE_CREATED_AT"
+      --tag "$IMAGE_SHA"
+      --tag "$IMAGE_BRANCH"
+      .
+    - docker push "$IMAGE_SHA"
+    - docker push "$IMAGE_BRANCH"
+    # Later jobs use the digest, not a tag, so they scan and deploy exactly
+    # the bytes that were built here.
+    - IMAGE_REF="$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE_SHA")"
+    - echo "IMAGE_REF=$IMAGE_REF" | tee build.env
+    - echo "$IMAGE_REF" > image-digest.txt
+    - docker image inspect --format '{{.Size}}' "$IMAGE_SHA" > image-size-bytes.txt
+    - echo "image size on the runner $(cat image-size-bytes.txt) bytes"
+  artifacts:
+    expire_in: 30 days
+    paths:
+      - image-digest.txt
+      - image-size-bytes.txt
+    reports:
+      dotenv: build.env
