@@ -48,15 +48,15 @@ GitLab account.
 
 ## Phase 4: `feat/security-scanning`
 
-- [ ] `trivy-fs` (`vuln,secret,misconfig`)
-- [ ] `trivy-config` (Dockerfile and k8s manifests)
-- [ ] `trivy-image` gate (`HIGH,CRITICAL`, `--ignore-unfixed`, `--exit-code 1`; table, JSON, GitLab report)
-- [ ] `checkov` (`dockerfile`, `kubernetes`, `gitlab_ci`)
-- [ ] `gitleaks` on git history
-- [ ] SBOM artifact (CycloneDX)
-- [ ] Suppression policy: justification and review date on every skip
-- [ ] Gate proven on `demo/vulnerable-base`, log in `docs/evidence/gate-blocks-vulnerable-image.txt` (branch not merged)
-- [ ] Scan gates and suppression policy documented
+- [x] `trivy-fs` (`vuln,secret,misconfig`)
+- [x] `trivy-config` (Dockerfile and k8s manifests)
+- [x] `trivy-image` gate (`HIGH,CRITICAL`, `--ignore-unfixed`, `--exit-code 1`; table, JSON, GitLab report)
+- [x] `checkov` (`dockerfile`, `kubernetes`, `gitlab_ci`)
+- [x] `gitleaks` on git history
+- [x] SBOM artifact (CycloneDX)
+- [x] Suppression policy: justification and review date on every skip
+- [x] Gate proven on `demo/vulnerable-base`, log in `docs/evidence/gate-blocks-vulnerable-image.txt` (branch not merged). Local run of the job's script; the GitLab job log is still to be captured
+- [x] Scan gates and suppression policy documented
 - [ ] TODO: `kube-score` and `kubeconform` jobs are added in Phase 5, once manifests exist
 
 ## Phase 5: `feat/k8s-manifests` → tag `v0.5.0`
