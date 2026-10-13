@@ -27,6 +27,8 @@ variables:
   GO_IMAGE: "golang:1.27.2@sha256:007a316059246276cb214df93950be77837545dc78007a73e0291a4963d5d3bf"
   GOLANGCI_IMAGE: "golangci/golangci-lint:v2.14.0-alpine@sha256:25925c95ebdc7aee39ecc0e6f4f33ac27b9a91718bc65fdf18a1a5c4c9325ee4"
   HADOLINT_IMAGE: "hadolint/hadolint:v2.15.1-alpine@sha256:a1d49ae1a4e83c1dbad26b8c1ad7588c8bd1e04f4866b34ad3cac50335198552"
+  KANIKO_IMAGE: "ghcr.io/osscontainertools/kaniko:v1.28.6-debug@sha256:7ab44d0131c3051b6dea128067e258c7afb5c4815082a93b9cf6c624f2140bf0"
+  CRANE_IMAGE: "gcr.io/go-containerregistry/crane/debug:v0.22.1@sha256:e78770b31258a3846f878036d9c1f63fbe4c871f9f56990bf77fd95c013e3c1b"
   DOCKER_IMAGE: "docker:29.9.0-cli@sha256:1a4c7cb63513f349bdad01fcc6e0f3f2f67d37b9da86f14dc0d4a0942eecda00"
   DIND_IMAGE: "docker:29.9.0-dind@sha256:0b6d18a4a222e71c88be6034926b4f6cde2fc33c2218643d03ccfddc65995470"
   TRIVY_IMAGE: "aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa"
@@ -55,6 +57,11 @@ variables:
   TRIVY_CACHE_DIR: "$CI_PROJECT_DIR/.trivycache"
   TRIVY_NO_PROGRESS: "true"
 
+  # Set to "true" (project or group CI/CD variable) only where the runner
+  # allows privileged containers. It enables the kind-based deploy-test job,
+  # which needs docker-in-docker. Everything else runs unprivileged.
+  PRIVILEGED_RUNNER: "false"
+
   IMAGE_SHA: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   IMAGE_BRANCH: "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
 
@@ -76,7 +83,8 @@ default:
       - .go/pkg/mod/
       - .cache/
 
-# Docker-in-Docker with TLS between the job and the daemon.
+# Docker-in-Docker with TLS between the job and the daemon. Needs a
+# privileged runner; only the optional deploy-test job uses it.
 .dind:
   image: $DOCKER_IMAGE
   services:
@@ -143,36 +151,41 @@ go-test:
 
 build-image:
   stage: build
-  extends: .dind
+  # Kaniko builds the Dockerfile in user space: no Docker daemon and no
+  # privileged container, so this job runs on any runner.
+  image:
+    name: $KANIKO_IMAGE
+    entrypoint: [""]
   needs:
     - go-lint
     - hadolint
     - go-test
   script:
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - mkdir -p /kaniko/.docker
     - >
-      docker build --pull
+      printf '{"auths":{"%s":{"username":"%s","password":"%s"}}}'
+      "$CI_REGISTRY" "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD"
+      > /kaniko/.docker/config.json
+    - >
+      /kaniko/executor
+      --context "$CI_PROJECT_DIR"
+      --dockerfile "$CI_PROJECT_DIR/Dockerfile"
       --build-arg "VERSION=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
       --label "org.opencontainers.image.source=$CI_PROJECT_URL"
       --label "org.opencontainers.image.revision=$CI_COMMIT_SHA"
       --label "org.opencontainers.image.created=$CI_PIPELINE_CREATED_AT"
-      --tag "$IMAGE_SHA"
-      --tag "$IMAGE_BRANCH"
-      .
-    - docker push "$IMAGE_SHA"
-    - docker push "$IMAGE_BRANCH"
+      --destination "$IMAGE_SHA"
+      --destination "$IMAGE_BRANCH"
+      --digest-file "$CI_PROJECT_DIR/digest.txt"
     # Later jobs use the digest, not a tag, so they scan and deploy exactly
     # the bytes that were built here.
-    - IMAGE_REF="$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE_SHA")"
+    - IMAGE_REF="$CI_REGISTRY_IMAGE@$(cat "$CI_PROJECT_DIR/digest.txt")"
     - echo "IMAGE_REF=$IMAGE_REF" | tee build.env
     - echo "$IMAGE_REF" > image-digest.txt
-    - docker image inspect --format '{{.Size}}' "$IMAGE_SHA" > image-size-bytes.txt
-    - echo "image size on the runner $(cat image-size-bytes.txt) bytes"
   artifacts:
     expire_in: 30 days
     paths:
       - image-digest.txt
-      - image-size-bytes.txt
     reports:
       dotenv: build.env
 
@@ -340,13 +353,16 @@ kube-score:
 
 # --------------------------------------------------------- deploy-test ----
 
-# Deploys the image that was just built to a throwaway Kubernetes cluster
-# (kind, running inside the docker:dind service) and smoke-tests it. Runs only
-# after every scan gate has passed. The cluster is always deleted.
-deploy-test:
+# Runs the image that was just built as a service container next to the job
+# and smoke-tests it over HTTP. Needs no privileges, so it runs everywhere,
+# and only after every scan gate has passed.
+smoke-test:
   stage: deploy-test
-  extends: .dind
-  needs:
+  image: $ALPINE_IMAGE
+  services:
+    - name: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+      alias: orders-api
+  needs: &all-gates
     - job: build-image
       artifacts: true
     - job: trivy-fs
@@ -363,6 +379,26 @@ deploy-test:
       artifacts: false
     - job: kube-score
       artifacts: false
+  script:
+    - apk add --no-cache bash curl
+    - |
+      for i in $(seq 1 30); do
+        curl -fsS -o /dev/null http://orders-api:8080/healthz && break
+        echo "waiting for the service ($i/30)"
+        sleep 1
+      done
+    - bash scripts/smoke.sh http://orders-api:8080
+
+# Deploys the image to a throwaway Kubernetes cluster (kind, running inside
+# the docker:dind service) and smoke-tests it there. Docker-in-Docker needs a
+# privileged runner, so this job exists only when PRIVILEGED_RUNNER is "true".
+# The cluster is always deleted.
+deploy-test:
+  stage: deploy-test
+  extends: .dind
+  rules:
+    - if: $PRIVILEGED_RUNNER == "true"
+  needs: *all-gates
   variables:
     # The kind node runs in the dind service, so the API server is reached at
     # the service alias, not localhost (see scripts/kind-up.sh).
@@ -409,8 +445,11 @@ deploy-staging:
   needs:
     - job: build-image
       artifacts: true
+    - job: smoke-test
+      artifacts: false
     - job: deploy-test
       artifacts: false
+      optional: true
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual
@@ -439,20 +478,27 @@ deploy-staging:
 
 release-image:
   stage: release
-  extends: .dind
+  image:
+    name: $CRANE_IMAGE
+    entrypoint: [""]
   needs:
     - job: build-image
       artifacts: true
+    - job: smoke-test
+      artifacts: false
     - job: deploy-test
       artifacts: false
+      optional: true
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
   interruptible: false
   script:
-    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - echo "$CI_REGISTRY_PASSWORD" | crane auth login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
     # Registry-side retag: no pull, no rebuild, the digest cannot change.
-    - docker buildx imagetools create --tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" "$IMAGE_REF"
-    - docker buildx imagetools inspect "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+    - crane tag "$IMAGE_REF" "$CI_COMMIT_TAG"
+    - RELEASED="$(crane digest "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG")"
+    - echo "$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG -> $RELEASED"
+    - test "$CI_REGISTRY_IMAGE@$RELEASED" = "$IMAGE_REF"
     - echo "RELEASE_IMAGE=$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG" > release.env
     - echo "RELEASE_IMAGE_REF=$IMAGE_REF" >> release.env
   artifacts:
