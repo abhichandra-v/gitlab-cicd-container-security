@@ -1,0 +1,214 @@
+# trivy-image job 3562, pipeline 559, branch demo/vulnerable-base (expected: FAILED)
+# Real GitLab CI output, fetched through the GitLab API on 2026-10-13.
+# Self-hosted GitLab 18.9 EE, gitlab-runner 18.8, Docker executor, NOT privileged.
+# The instance hostname is replaced with <gitlab-host>; upload tokens and
+# correlation ids are redacted. Nothing else is edited.
+
+Running with gitlab-runner 18.8.0 (9ffb4aa0)
+  on docker1-vm U7dwBNCWq, system ID: s_e2e55318b32c
+Preparing the "docker" executor
+Using Docker executor with image aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Using effective pull policy of [always] for container aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+Pulling docker image aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Using docker image sha256:6d93f1ec925b37c5ce785e416b86cba056e10c8c2914a59a8ea7be18115d6764 for aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa with digest aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+Preparing environment
+Using effective pull policy of [always] for container sha256:34b0f89f2c14d52a1417a420619c6802f6809c75a6c39e41103117e478465f8d
+Running on runner-u7dwbncwq-project-26-concurrent-0 via docker1-vm...
+Getting source from Git repository
+Gitaly correlation ID: 01M4TGAG6X88XA87XYXCPBM367
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in /builds/ai-lab/orders-api-pipeline/.git/
+Created fresh repository.
+Checking out 8f29efa7 as detached HEAD (ref is demo/vulnerable-base)...
+Removing .trivycache/
+Removing rendered/
+Removing trivy-config.json
+Skipping Git submodules setup
+Restoring cache
+Checking cache for trivy-db-protected...
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted.
+Successfully extracted cache
+Downloading artifacts
+Downloading artifacts for build-image (3559)...
+Downloading artifacts from coordinator... ok        correlation_id=[redacted] host=<gitlab-host> id=3559 responseStatus=200 OK token=[redacted]
+Executing "step_script" stage of the job script
+Using effective pull policy of [always] for container aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+Using docker image sha256:6d93f1ec925b37c5ce785e416b86cba056e10c8c2914a59a8ea7be18115d6764 for aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa with digest aquasec/trivy@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa ...
+$ sh scripts/scan-image.sh "$IMAGE_REF" reports
+scanning <gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:763928e4d722a2974745cdd776329f6b2c311ba434d479f9410ed64266ee7300
+2026-10-13T11:28:26Z	INFO	Loaded	file_path="trivy.yaml"
+2026-10-13T11:28:26Z	INFO	[vuln] Vulnerability scanning is enabled
+2026-10-13T11:28:26Z	INFO	[secret] Secret scanning is enabled
+2026-10-13T11:28:26Z	INFO	[secret] If your scanning is slow, please try '--scanners vuln' to disable secret scanning
+2026-10-13T11:28:26Z	INFO	[secret] Please see https://trivy.dev/docs/v0.75/guide/scanner/secret#recommendation for faster secret detection
+2026-10-13T11:28:27Z	INFO	Detected OS	family="alpine" version="3.12.0"
+2026-10-13T11:28:27Z	INFO	[alpine] Detecting vulnerabilities...	os_version="3.12" repository="3.12" pkg_num=14
+2026-10-13T11:28:27Z	INFO	Number of language-specific files	num=1
+2026-10-13T11:28:27Z	INFO	[gobinary] Detecting vulnerabilities...
+2026-10-13T11:28:27Z	WARN	This OS version is no longer supported by the distribution	family="alpine" version="3.12.0"
+2026-10-13T11:28:27Z	WARN	The vulnerability detection may be insufficient because security updates are not provided
+2026-10-13T11:28:27Z	INFO	Loaded	file_path="trivy.yaml"
+2026-10-13T11:28:27Z	INFO	Loaded	file_path="trivy.yaml"
+2026-10-13T11:28:27Z	WARN	[report] No enabled scanners found. Summary table will not be displayed.
+For OSS Maintainers: VEX Notice
+--------------------------------
+If you're an OSS maintainer and Trivy has detected vulnerabilities in your project that you believe are not actually exploitable, consider issuing a VEX (Vulnerability Exploitability eXchange) statement.
+VEX allows you to communicate the actual status of vulnerabilities in your project, improving security transparency and reducing false positives for your users.
+Learn more and start using VEX: https://trivy.dev/docs/v0.75/guide/supply-chain/vex/repo#publishing-vex-documents
+To disable this notice, set the TRIVY_DISABLE_VEX_NOTICE environment variable.
+<gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:763928e4d722a2974745cdd776329f6b2c311ba434d479f9410ed64266ee7300 (alpine 3.12.0)
+================================================================================================================================================
+Total: 36 (HIGH: 32, CRITICAL: 4)
+┌──────────────┬────────────────┬──────────┬────────┬───────────────────┬───────────────┬──────────────────────────────────────────────────────────────┐
+│   Library    │ Vulnerability  │ Severity │ Status │ Installed Version │ Fixed Version │                            Title                             │
+├──────────────┼────────────────┼──────────┼────────┼───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ apk-tools    │ CVE-2021-36159 │ CRITICAL │ fixed  │ 2.10.5-r1         │ 2.10.7-r0     │ libfetch: an out of boundary read while libfetch uses strtol │
+│              │                │          │        │                   │               │ to parse...                                                  │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-36159                   │
+│              ├────────────────┼──────────┤        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-30139 │ HIGH     │        │                   │ 2.10.6-r0     │ In Alpine Linux apk-tools before 2.12.5, the tarball parser  │
+│              │                │          │        │                   │               │ allows a buffer...                                           │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-30139                   │
+├──────────────┼────────────────┤          │        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ busybox      │ CVE-2021-28831 │          │        │ 1.31.1-r16        │ 1.31.1-r20    │ busybox: invalid free or segmentation fault via malformed    │
+│              │                │          │        │                   │               │ gzip data                                                    │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-28831                   │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42378 │          │        │                   │ 1.31.1-r21    │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42378                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42379 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42379                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42380 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42380                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42381 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42381                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42382 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42382                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42383 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42383                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42384 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42384                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42385 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42385                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42386 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42386                   │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2022-28391 │          │        │                   │ 1.31.1-r22    │ busybox: remote attackers may execute arbitrary code if      │
+│              │                │          │        │                   │               │ netstat is used                                              │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2022-28391                   │
+├──────────────┼────────────────┼──────────┤        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ libcrypto1.1 │ CVE-2021-3711  │ CRITICAL │        │ 1.1.1g-r0         │ 1.1.1l-r0     │ openssl: SM2 Decryption Buffer Overflow                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-3711                    │
+│              ├────────────────┼──────────┤        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-23840 │ HIGH     │        │                   │ 1.1.1j-r0     │ openssl: integer overflow in CipherUpdate                    │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-23840                   │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-3450  │          │        │                   │ 1.1.1k-r0     │ openssl: CA certificate check bypass with                    │
+│              │                │          │        │                   │               │ X509_V_FLAG_X509_STRICT                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-3450                    │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-3712  │          │        │                   │ 1.1.1l-r0     │ openssl: Read buffer overruns processing ASN.1 strings       │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-3712                    │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2022-0778  │          │        │                   │ 1.1.1n-r0     │ openssl: Infinite loop in BN_mod_sqrt() reachable when       │
+│              │                │          │        │                   │               │ parsing certificates                                         │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2022-0778                    │
+├──────────────┼────────────────┼──────────┤        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│ libssl1.1    │ CVE-2021-3711  │ CRITICAL │        │                   │ 1.1.1l-r0     │ openssl: SM2 Decryption Buffer Overflow                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-3711                    │
+│              ├────────────────┼──────────┤        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-23840 │ HIGH     │        │                   │ 1.1.1j-r0     │ openssl: integer overflow in CipherUpdate                    │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-23840                   │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-3450  │          │        │                   │ 1.1.1k-r0     │ openssl: CA certificate check bypass with                    │
+│              │                │          │        │                   │               │ X509_V_FLAG_X509_STRICT                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-3450                    │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-3712  │          │        │                   │ 1.1.1l-r0     │ openssl: Read buffer overruns processing ASN.1 strings       │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-3712                    │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2022-0778  │          │        │                   │ 1.1.1n-r0     │ openssl: Infinite loop in BN_mod_sqrt() reachable when       │
+│              │                │          │        │                   │               │ parsing certificates                                         │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2022-0778                    │
+├──────────────┼────────────────┤          │        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ ssl_client   │ CVE-2021-28831 │          │        │ 1.31.1-r16        │ 1.31.1-r20    │ busybox: invalid free or segmentation fault via malformed    │
+│              │                │          │        │                   │               │ gzip data                                                    │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-28831                   │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42378 │          │        │                   │ 1.31.1-r21    │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42378                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42379 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42379                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42380 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42380                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42381 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42381                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42382 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42382                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42383 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42383                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42384 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42384                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42385 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42385                   │
+│              ├────────────────┤          │        │                   │               ├──────────────────────────────────────────────────────────────┤
+│              │ CVE-2021-42386 │          │        │                   │               │ busybox: use-after-free in awk applet leads to denial of     │
+│              │                │          │        │                   │               │ service and possibly...                                      │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2021-42386                   │
+│              ├────────────────┤          │        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2022-28391 │          │        │                   │ 1.31.1-r22    │ busybox: remote attackers may execute arbitrary code if      │
+│              │                │          │        │                   │               │ netstat is used                                              │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2022-28391                   │
+├──────────────┼────────────────┼──────────┤        ├───────────────────┼───────────────┼──────────────────────────────────────────────────────────────┤
+│ zlib         │ CVE-2022-37434 │ CRITICAL │        │ 1.2.11-r3         │ 1.2.12-r2     │ zlib: heap-based buffer over-read and overflow in inflate()  │
+│              │                │          │        │                   │               │ in inflate.c via a...                                        │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2022-37434                   │
+│              ├────────────────┼──────────┤        │                   ├───────────────┼──────────────────────────────────────────────────────────────┤
+│              │ CVE-2018-25032 │ HIGH     │        │                   │ 1.2.12-r0     │ zlib: A flaw found in zlib when compressing (not             │
+│              │                │          │        │                   │               │ decompressing) certain inputs...                             │
+│              │                │          │        │                   │               │ https://avd.aquasec.com/nvd/cve-2018-25032                   │
+└──────────────┴────────────────┴──────────┴────────┴───────────────────┴───────────────┴──────────────────────────────────────────────────────────────┘
+GATE FAILED: <gitlab-host>:5050/ai-lab/orders-api-pipeline@sha256:763928e4d722a2974745cdd776329f6b2c311ba434d479f9410ed64266ee7300 has HIGH or CRITICAL vulnerabilities with a fix available.
+See docs/RUNBOOK.md, 'Triaging a failed scan'.
+Uploading artifacts for failed job
+Uploading artifacts...
+reports/trivy-image.json: found 1 matching artifact files and directories
+reports/trivy-image.txt: found 1 matching artifact files and directories
+Uploading artifacts as "archive" to coordinator... 201 Created  correlation_id=[redacted] id=3562 responseStatus=201 Created token=[redacted]
+Uploading artifacts...
+reports/gl-container-scanning-report.json: found 1 matching artifact files and directories
+Uploading artifacts as "container_scanning" to coordinator... 201 Created  correlation_id=[redacted] id=3562 responseStatus=201 Created token=[redacted]
+Cleaning up project directory and file based variables
+ERROR: Job failed: exit code 1

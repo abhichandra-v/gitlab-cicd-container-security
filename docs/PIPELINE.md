@@ -3,13 +3,12 @@
 How [`.gitlab-ci.yml`](../.gitlab-ci.yml) is put together, stage by stage,
 and why each gate is there.
 
-> **Status of this document.** Every job's commands have been run locally in
-> the same pinned image the job uses, and the deploy test has been rehearsed
-> against a real `docker:dind` service. The pipeline has **not yet run on
-> GitLab**: that needs the project owner's account
-> ([SETUP-GITLAB.md](SETUP-GITLAB.md)). Where behaviour depends on GitLab
-> itself (registry login with the job token, artifact hand-off, the release
-> API), it is described as designed, not as observed.
+> **Status of this document.** The pipeline runs green on a self-hosted
+> GitLab 18.9 instance with an unprivileged Docker runner
+> ([`evidence/gitlab/`](evidence/gitlab/)). Two things described here have
+> not run on GitLab: the kind-based `deploy-test` job, which needs a
+> privileged runner and has been run locally and rehearsed against a real
+> `docker:dind` service, and a `deploy-staging` run with a real kubeconfig.
 
 ## Shape
 
@@ -37,7 +36,8 @@ flowchart LR
     sbom[sbom]
   end
   subgraph deploy-test
-    dt[deploy-test]
+    st[smoke-test]
+    dt["deploy-test (privileged runners)"]
   end
   subgraph deploy
     stg["deploy-staging (manual)"]
@@ -56,15 +56,16 @@ flowchart LR
   render --> ckv
   render --> kconf
   render --> kscore
-  tfs --> dt
-  tcfg --> dt
-  ckv --> dt
-  kconf --> dt
-  kscore --> dt
-  leaks --> dt
+  tfs --> st
+  tcfg --> st
+  ckv --> st
+  kconf --> st
+  kscore --> st
+  leaks --> st
+  timg --> st
   timg --> dt
-  dt --> stg
-  dt --> rimg
+  st --> stg
+  st --> rimg
   rimg --> rel
 ```
 
@@ -96,6 +97,7 @@ never `only`/`except`.
 | Convention | Why |
 |---|---|
 | Every image is `tag@sha256:digest`, defined once in `variables:` | A re-pushed tag cannot change what a job runs; one place to update |
+| No job except the optional `deploy-test` needs a privileged runner | The pipeline runs on locked-down runners, and a build job cannot escape to the host (D-023) |
 | Release binaries (kind, kubectl) go through `scripts/fetch-verified.sh` | Nothing downloaded at job time is executed without a SHA-256 match |
 | Tools that ship an entrypoint use `entrypoint: [""]` | GitLab needs a shell to run `script:` |
 | Scan jobs write JSON, then gate on `trivy convert --exit-code 1` | The table in the log, the artifact and the GitLab report come from one scan (D-013) |
@@ -141,26 +143,33 @@ own tests.
 
 ## Stage: build
 
-`build-image` uses `docker:cli` with a `docker:dind` service. The job and the
-daemon talk over TLS (`DOCKER_TLS_CERTDIR=/certs`, port 2376); the plaintext
-2375 socket is never opened.
+`build-image` builds the root [`Dockerfile`](../Dockerfile) with
+[Kaniko](https://github.com/osscontainertools/kaniko), which executes the
+Dockerfile in user space. There is no Docker daemon and no privileged
+container.
 
-It builds the root [`Dockerfile`](../Dockerfile) with `--pull`, labels the
-image with the source URL, commit and build time, and pushes two tags to the
-project registry:
+It labels the image with the source URL, commit and build time, and pushes
+two tags to the project registry:
 
 | Tag | Purpose |
 |---|---|
 | `$CI_COMMIT_SHORT_SHA` | Immutable handle for this commit |
 | `$CI_COMMIT_REF_SLUG` | Moving "latest on this branch" (for example `main`) |
 
-It then reads the pushed digest and exports it two ways: a dotenv report
-(`IMAGE_REF=repository@sha256:…`), which GitLab injects into every job that
-`needs` this one, and `image-digest.txt` as a plain artifact.
+Kaniko writes the pushed digest to a file. The job exports it two ways: a
+dotenv report (`IMAGE_REF=repository@sha256:…`), which GitLab injects into
+every job that `needs` this one, and `image-digest.txt` as a plain artifact.
+
+**Why Kaniko and not Docker-in-Docker.** The first design used `docker:dind`
+with TLS. On the runner this pipeline actually runs on, privileged containers
+are disabled, and the dind service cannot start (`mount: permission denied`).
+That is a reasonable runner policy: a privileged job container is root on the
+host in all but name. A daemonless build removes the requirement instead of
+asking for it to be relaxed (D-023).
 
 **Why the digest matters:** a tag can be moved between the build and the
 deploy. Every later job that touches the image uses `IMAGE_REF`, so "the image
-that was scanned" and "the image that was deployed" are the same by
+that was scanned" and "the image that was released" are the same by
 construction.
 
 **Why push before scanning:** the scan needs the image somewhere it can be
@@ -169,8 +178,11 @@ commit and branch at this point; nothing deploys it until the gates pass, and
 the version tag is added only by `release-image`.
 
 Registry login uses the job token (`CI_REGISTRY_USER` /
-`CI_REGISTRY_PASSWORD`, passed on stdin). No registry credential is stored in
-project variables.
+`CI_REGISTRY_PASSWORD`), written to Kaniko's Docker config inside the job
+container. No registry credential is stored in project variables.
+
+`make image` locally uses `docker build` on the same Dockerfile. The builder
+differs; the Dockerfile, base digests and build flags do not.
 
 ## Stage: scan
 
@@ -213,7 +225,26 @@ image scan at all: nothing else looks inside the base.
 
 ## Stage: deploy-test
 
-`deploy-test` `needs` the image **and all seven gates** (D-019), then:
+Two jobs. Both `need` the image **and all seven gates** (D-019), so nothing
+is run, even in a throwaway container, before it has passed every scan.
+
+### smoke-test (always)
+
+Starts the image that was just built as a GitLab service container next to
+the job and runs `scripts/smoke.sh` against it over HTTP: health, readiness,
+create an order, fetch it, list, and the 404 and 422 cases. It needs no
+privileges, so it runs on every runner.
+
+**Why:** an image can build, lint and scan clean and still not start. This is
+the cheapest test that it does. Limit: the service is referenced by its
+commit tag, not by digest, because GitLab resolves `services:` before dotenv
+variables exist. The tag is the one `build-image` pushed seconds earlier in
+the same pipeline.
+
+### deploy-test (privileged runners only)
+
+Exists only when the CI/CD variable `PRIVILEGED_RUNNER` is `"true"`, because
+it needs Docker-in-Docker:
 
 1. Installs kind and kubectl through `fetch-verified.sh`.
 2. Pulls `IMAGE_REF` from the registry.
@@ -221,9 +252,7 @@ image scan at all: nothing else looks inside the base.
    service, on a pinned node image.
 4. `scripts/deploy.sh`: loads the image into the cluster, applies the dev
    overlay, waits for `kubectl rollout status`.
-5. `scripts/smoke-k8s.sh`: port-forwards the Service and runs
-   `scripts/smoke.sh` (health, readiness, create an order, fetch it, list,
-   404 and 422 cases).
+5. `scripts/smoke-k8s.sh`: port-forwards the Service and runs the smoke test.
 6. `scripts/netpol-check.sh`: checks the NetworkPolicies are enforced, not
    merely accepted.
 7. `after_script`: on failure, collects `kubectl describe`, events and logs
@@ -241,10 +270,11 @@ not the job's `localhost`. `KIND_API_HOST=docker` makes `kind-up.sh` bind the
 API server to all interfaces, add `docker` to its certificate SANs, and point
 the kubeconfig at `https://docker:6443` (D-018).
 
-**Rehearsed locally:**
-[`evidence/deploy-test-dind-rehearsal.txt`](evidence/deploy-test-dind-rehearsal.txt)
-is `scripts/sim-deploy-test.sh` running these steps against a real
-`docker:dind` service with the pipeline's images. It is not a GitLab log.
+**Where this has run.** Not on GitLab: the runner in use is unprivileged, so
+the job is not created there. The same steps pass locally
+([`evidence/kind-deploy-smoke.txt`](evidence/kind-deploy-smoke.txt)) and
+against a real `docker:dind` service with the pipeline's images
+([`evidence/deploy-test-dind-rehearsal.txt`](evidence/deploy-test-dind-rehearsal.txt)).
 
 ## Stage: deploy
 
@@ -260,7 +290,9 @@ It runs [`scripts/deploy-staging.sh`](../scripts/deploy-staging.sh):
 
 **Why manual.** The automated part ends at "this exact image passed every
 gate and started correctly in a cluster". Putting it in front of users is a
-decision, so it is a button. `allow_failure: true` on a manual job keeps an
+decision, so it is a button. On GitLab the button has been pressed once
+without a kubeconfig, and the job skipped as designed (job log in
+[`evidence/gitlab/pipeline-main-green.txt`](evidence/gitlab/pipeline-main-green.txt)). `allow_failure: true` on a manual job keeps an
 unpressed button from marking the pipeline as blocked.
 
 **Why the variable is protected.** A protected variable is only exposed to
@@ -276,12 +308,12 @@ Tag pipelines for `vMAJOR.MINOR.PATCH` only.
 
 | Job | What it does |
 |---|---|
-| `release-image` | `docker buildx imagetools create --tag …:$CI_COMMIT_TAG "$IMAGE_REF"`: adds the version tag to the existing manifest in the registry |
+| `release-image` | `crane tag "$IMAGE_REF" "$CI_COMMIT_TAG"`: adds the version tag to the existing manifest in the registry, then checks the tag resolves to the same digest |
 | `release` | Generates notes with `scripts/release-notes.sh` (image tag, digest, commits since the previous tag) and creates the GitLab release through the `release:` keyword |
 
 **Why retag instead of rebuild.** A tag pipeline runs every stage, so by the
 time `release-image` starts, one specific digest has been linted, tested,
-scanned and deploy-tested. Rebuilding for the release would produce a
+scanned and smoke-tested. Rebuilding for the release would produce a
 different image that had been through none of that (D-020).
 
 ## Local equivalents
@@ -298,6 +330,7 @@ the only prerequisite is Docker.
 | `trivy-fs`, `trivy-config`, `trivy-image`, `checkov`, `gitleaks` | `make scan` |
 | `sbom` | `make sbom` |
 | `render-manifests`, `kubeconform`, `kube-score` | `make validate` |
+| `smoke-test` | `make image-evidence` (runs the image locked down and smoke-tests it) |
 | `deploy-test` | `make kind-up deploy smoke netpol-check`, or `bash scripts/sim-deploy-test.sh` for the dind variant |
 | `deploy-staging` | `DRY_RUN=1 IMAGE_REF=… bash scripts/deploy-staging.sh` |
 
