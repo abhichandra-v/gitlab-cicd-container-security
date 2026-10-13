@@ -2,6 +2,9 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
+IMAGE   ?= orders-api:local
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+
 # Standalone kustomize if present, otherwise the copy embedded in kubectl.
 KUSTOMIZE ?= $(shell command -v kustomize >/dev/null 2>&1 && echo kustomize || echo kubectl kustomize)
 
@@ -36,9 +39,21 @@ build: ## Build the static binary into bin/
 api-evidence: ## Run the binary, curl every endpoint, write docs/evidence/api-smoke.txt
 	bash scripts/api-evidence.sh
 
+.PHONY: image
+image: ## Build the hardened image as $(IMAGE)
+	docker build --build-arg VERSION=$(VERSION) -t $(IMAGE) .
+
+.PHONY: size-report
+size-report: ## Build hardened, distroless and naive images; write docs/evidence/image-size.txt
+	bash scripts/size-report.sh
+
+.PHONY: image-evidence
+image-evidence: image ## Record image history, config and contents; run it locked down
+	bash scripts/image-evidence.sh $(IMAGE)
+
 .PHONY: clean
 clean: ## Remove build output
 	rm -rf bin coverage.out junit.xml reports
 
 # Targets added in later phases (see docs/PLAN.md):
-# image, size-report, scan, validate, kind-up, deploy, smoke
+# scan, validate, kind-up, deploy, smoke

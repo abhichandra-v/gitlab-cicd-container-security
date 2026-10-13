@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -85,6 +86,10 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 		}
 	}
 
+	if err := healthcheck(testEnv(map[string]string{"PORT": port})); err != nil {
+		t.Errorf("healthcheck against a running server: %v", err)
+	}
+
 	cancel() // what SIGTERM does in main
 
 	select {
@@ -103,6 +108,32 @@ func TestRunServesAndShutsDownGracefully(t *testing.T) {
 	}
 	if _, err := client.Get(base + "/healthz"); err == nil {
 		t.Error("server still accepting connections after shutdown")
+	}
+	if err := healthcheck(testEnv(map[string]string{"PORT": port})); err == nil {
+		t.Error("healthcheck passed against a stopped server")
+	}
+}
+
+func TestHealthcheckFailures(t *testing.T) {
+	unhealthy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer unhealthy.Close()
+	_, unhealthyPort, _ := net.SplitHostPort(unhealthy.Listener.Addr().String())
+
+	tests := []struct {
+		name string
+		env  map[string]string
+	}{
+		{"invalid config", map[string]string{"PORT": "not-a-port"}},
+		{"non-200 response", map[string]string{"PORT": unhealthyPort}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := healthcheck(testEnv(tt.env)); err == nil {
+				t.Error("healthcheck returned nil, want an error")
+			}
+		})
 	}
 }
 

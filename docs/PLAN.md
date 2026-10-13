@@ -23,15 +23,15 @@ GitLab account.
 
 ## Phase 2: `feat/container-image` → tag `v0.1.0`
 
-- [ ] `Dockerfile` (multi-stage, hardened, numeric non-root UID)
-- [ ] `build/naive/Dockerfile` (comparison only)
-- [ ] `.dockerignore`, `make image`
-- [ ] `scripts/size-report.sh` writes `docs/evidence/image-size.txt` (bytes, MB, ratio, base digests)
-- [ ] Final image ≤ 8 MB, or the real number reported
-- [ ] Runs with `--read-only --cap-drop ALL --user 65532:65532`
-- [ ] `docker history` and `docker inspect` output saved to evidence
-- [ ] Image hardening choices documented
-- [ ] Tag `v0.1.0`
+- [x] `Dockerfile` (multi-stage, hardened, numeric non-root UID)
+- [x] `build/naive/Dockerfile` (comparison only)
+- [x] `.dockerignore`, `make image`
+- [x] `scripts/size-report.sh` writes `docs/evidence/image-size.txt` (bytes, MB, ratio, base digests)
+- [x] Final image ≤ 8 MB, or the real number reported (measured: 7.30 MB)
+- [x] Runs with `--read-only --cap-drop ALL --user 65532:65532`
+- [x] `docker history` and `docker inspect` output saved to evidence
+- [x] Image hardening choices documented
+- [x] Tag `v0.1.0`
 
 ## Phase 3: `ci/gitlab-pipeline-core`
 
