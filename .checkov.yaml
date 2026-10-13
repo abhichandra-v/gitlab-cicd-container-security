@@ -1,0 +1,16 @@
+---
+# Shared by the pipeline `checkov` job and `make scan`.
+directory:
+  - .
+framework:
+  - dockerfile
+  - kubernetes
+  - gitlab_ci
+skip-path:
+  # Deliberately bad comparison image; never built by the pipeline.
+  # Justification and review date: docs/SECURITY.md, "Suppressions".
+  - build/naive
+  - .go
+  - .cache
+compact: true
+quiet: true

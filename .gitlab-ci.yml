@@ -27,6 +27,8 @@ variables:
   DOCKER_IMAGE: "docker:29.9.0-cli@sha256:1a4c7cb63513f349bdad01fcc6e0f3f2f67d37b9da86f14dc0d4a0942eecda00"
   DIND_IMAGE: "docker:29.9.0-dind@sha256:0b6d18a4a222e71c88be6034926b4f6cde2fc33c2218643d03ccfddc65995470"
   TRIVY_IMAGE: "aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa"
+  CHECKOV_IMAGE: "bridgecrew/checkov:3.3.28@sha256:19ab1e9a08bf76f78391ca6fa46bb62fd08737e4e66466b16a82aa2d1337e153"
+  GITLEAKS_IMAGE: "zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
   GOTESTSUM_VERSION: "v1.13.0"
 
   # Go caches live inside the project directory so GitLab can cache them.
@@ -220,3 +222,40 @@ trivy-image:
       - reports/trivy-image.txt
     reports:
       container_scanning: reports/gl-container-scanning-report.json
+
+checkov:
+  stage: scan
+  image:
+    name: $CHECKOV_IMAGE
+    entrypoint: [""]
+  needs: []
+  script:
+    - checkov --version
+    - >
+      checkov --config-file .checkov.yaml
+      --output cli --output junitxml
+      --output-file-path console,checkov-junit.xml
+  artifacts:
+    when: always
+    expire_in: 30 days
+    reports:
+      junit: checkov-junit.xml
+
+gitleaks:
+  stage: scan
+  image:
+    name: $GITLEAKS_IMAGE
+    entrypoint: [""]
+  needs: []
+  variables:
+    # Full history: a secret removed in a later commit is still a leak.
+    GIT_DEPTH: "0"
+  script:
+    - >
+      gitleaks git --redact --no-banner --exit-code 1
+      --report-format json --report-path gitleaks-report.json .
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - gitleaks-report.json
